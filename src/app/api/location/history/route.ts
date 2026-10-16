@@ -84,6 +84,8 @@ export const GET = authedRoute({ managerPermission: 'canViewGps' }, async ({ req
         endedAt: v.endedAt,
         outcome: v.outcome,
         notes: v.notes,
+        distanceFromClient: v.distanceFromClient,
+        isException: v.isException,
       })),
       orders: orders.map((o) => ({ id: o.id, orderNumber: o.orderNumber, clientName: o.client.name, grandTotal: Number(o.grandTotal), createdAt: o.createdAt })),
       payments: payments.map((p) => ({ id: p.id, receiptNumber: p.receiptNumber, clientName: p.client.name, amount: Number(p.amount), paymentMethod: p.paymentMethod, collectedAt: p.collectedAt })),

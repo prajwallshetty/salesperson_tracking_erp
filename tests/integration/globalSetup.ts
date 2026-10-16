@@ -24,14 +24,15 @@ export async function setup() {
     DISABLE_RATE_LIMIT: 'true',
     NODE_ENV: process.env.TEST_SERVER_MODE === 'production' ? 'production' : 'development',
     COOKIE_SECURE: 'false',
-  };
+  } as NodeJS.ProcessEnv;
 
   execSync('npx prisma migrate reset --force --skip-seed --skip-generate', { env, stdio: 'inherit' });
   execSync('npx tsx prisma/seed.ts', { env, stdio: 'inherit' });
 
-  server = spawn('npx', ['tsx', 'server.ts'], { env, stdio: ['ignore', 'pipe', 'pipe'], detached: true });
-  server.stdout?.on('data', (d) => process.env.DEBUG_SERVER && process.stdout.write(d));
-  server.stderr?.on('data', (d) => process.env.DEBUG_SERVER && process.stderr.write(d));
+  const child = spawn('npx', ['tsx', 'server.ts'], { env, stdio: ['ignore', 'pipe', 'pipe'], detached: true });
+  server = child;
+  child.stdout?.on('data', (d) => process.env.DEBUG_SERVER && process.stdout.write(d));
+  child.stderr?.on('data', (d) => process.env.DEBUG_SERVER && process.stderr.write(d));
 
   const deadline = Date.now() + 150_000;
   while (Date.now() < deadline) {

@@ -16,6 +16,20 @@ export const GET = authedRoute({}, async ({ req, user }) => {
   if (status && (Object.values(ExpenseStatus) as string[]).includes(status)) where.status = status as ExpenseStatus;
   const category = sp.get('category');
   if (category && (Object.values(ExpenseCategory) as string[]).includes(category)) where.category = category as ExpenseCategory;
+  const search = sp.get('search')?.trim();
+  if (search) {
+    where.AND = [
+      {
+        OR: [
+          { expenseNumber: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } },
+          { merchantName: { contains: search, mode: 'insensitive' } },
+          { salesperson: { user: { name: { contains: search, mode: 'insensitive' } } } },
+          { salesperson: { employeeCode: { contains: search, mode: 'insensitive' } } },
+        ],
+      },
+    ];
+  }
   const startDate = sp.get('startDate');
   const endDate = sp.get('endDate');
   if (startDate || endDate) {

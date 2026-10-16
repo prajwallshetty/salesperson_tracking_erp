@@ -11,6 +11,8 @@ export function performancePeriod(range: string, from?: string | null, to?: stri
     start = startOfBusinessDate(monday.toISOString().slice(0, 10));
   } else if (range === 'this_month') {
     start = startOfBusinessDate(`${todayYmd.slice(0, 7)}-01`);
+  } else if (range === 'all_time') {
+    start = new Date(0);
   } else if (range === 'custom' && from && to) {
     start = startOfBusinessDate(toBusinessDateString(from));
     end = endOfBusinessDate(toBusinessDateString(to));

@@ -27,15 +27,21 @@ function tokenFromHandshake(socket: Socket): string | null {
 export function initSocketServer(httpServer: HttpServer, allowedOrigins: string[]): SocketIOServer {
   const allowed = new Set(allowedOrigins);
   const io = new SocketIOServer(httpServer, {
-    cors: {
-      origin: (origin, cb) => {
-        if (!origin || allowed.has(origin)) return cb(null, true);
-        if (process.env.NODE_ENV !== 'production' && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
-          return cb(null, true);
-        }
-        return cb(new Error(`Origin ${origin} not allowed by CORS`));
-      },
-      credentials: true,
+    // Cross-origin browser clients (CORS_ORIGINS) only; same-origin is checked in allowRequest.
+    cors: allowed.size ? { origin: [...allowed], credentials: true } : undefined,
+    allowRequest: (req, cb) => {
+      const origin = req.headers.origin;
+      if (!origin) return cb(null, true); // native / server-to-server clients
+      let host: string | null = null;
+      try {
+        host = new URL(origin).host;
+      } catch {
+        return cb('Invalid origin', false);
+      }
+      const sameOrigin = host === req.headers.host || host === req.headers['x-forwarded-host'];
+      const devLocal = process.env.NODE_ENV !== 'production' && /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host);
+      if (sameOrigin || allowed.has(origin) || devLocal) return cb(null, true);
+      return cb(`Origin ${origin} not allowed`, false);
     },
     pingInterval: 25000,
     pingTimeout: 20000,

@@ -61,8 +61,9 @@ export const GET = authedRoute({}, async ({ req, user }) => {
       notes: c.notes,
       openingBalance: Number(c.openingBalance),
       currentOutstanding: Number(c.currentOutstanding),
-      primarySalesperson: primary ? { id: primary.salesperson.id, name: primary.salesperson.user.name } : null,
-      backupSalesperson: backup ? { id: backup.salesperson.id, name: backup.salesperson.user.name } : null,
+      primarySalesperson: primary ? { id: primary.salesperson.id, name: primary.salesperson.user.name, assignedAt: primary.assignedAt } : null,
+      backupSalesperson: backup ? { id: backup.salesperson.id, name: backup.salesperson.user.name, assignedAt: backup.assignedAt } : null,
+      assignedAt: primary?.assignedAt ?? null,
       distanceMeters: hasCoords ? calculateHaversineDistanceMeters(lat, lng, c.latitude, c.longitude) : undefined,
     };
   });
