@@ -1,0 +1,119 @@
+import type { Server as HttpServer } from 'http';
+import { Server as SocketIOServer, type Socket } from 'socket.io';
+import { verifySessionToken } from '@/lib/auth/tokens';
+import { loadAuthenticatedUser } from '@/lib/auth/session';
+import { SESSION_COOKIE } from '@/lib/auth/constants';
+import { setIO } from './emitter';
+
+/** Same rooms, events and authorization as the legacy API's socket server. */
+
+const socketRateLimits = new Map<string, { count: number; resetAt: number }>();
+
+function tokenFromHandshake(socket: Socket): string | null {
+  const auth = socket.handshake.auth?.token || socket.handshake.headers?.authorization || socket.handshake.query?.token;
+  if (auth) {
+    const s = String(auth);
+    return s.startsWith('Bearer ') ? s.slice(7) : s;
+  }
+  // Browser clients on the same origin authenticate with the httpOnly session cookie.
+  const cookie = socket.handshake.headers?.cookie;
+  if (cookie) {
+    const match = cookie.split(/;\s*/).find((c) => c.startsWith(`${SESSION_COOKIE}=`));
+    if (match) return decodeURIComponent(match.slice(SESSION_COOKIE.length + 1));
+  }
+  return null;
+}
+
+export function initSocketServer(httpServer: HttpServer, allowedOrigins: string[]): SocketIOServer {
+  const allowed = new Set(allowedOrigins);
+  const io = new SocketIOServer(httpServer, {
+    cors: {
+      origin: (origin, cb) => {
+        if (!origin || allowed.has(origin)) return cb(null, true);
+        if (process.env.NODE_ENV !== 'production' && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+          return cb(null, true);
+        }
+        return cb(new Error(`Origin ${origin} not allowed by CORS`));
+      },
+      credentials: true,
+    },
+    pingInterval: 25000,
+    pingTimeout: 20000,
+    transports: ['websocket', 'polling'],
+  });
+
+  io.use(async (socket, next) => {
+    try {
+      const token = tokenFromHandshake(socket);
+      if (!token) return next(new Error('Authentication error: Missing token'));
+      const payload = verifySessionToken(token);
+      if (!payload) return next(new Error('Authentication error: Invalid or expired token'));
+      const user = await loadAuthenticatedUser(payload.userId);
+      if (!user) return next(new Error('Authentication error: User account is inactive or revoked'));
+      socket.data.user = user;
+      return next();
+    } catch (err) {
+      console.error('Socket authentication exception:', err);
+      return next(new Error('Internal server error during socket authentication'));
+    }
+  });
+
+  io.on('connection', (socket) => {
+    const user = socket.data.user;
+    if (!user) return void socket.disconnect(true);
+
+    socket.join(`user:${user.id}`);
+    if (user.role === 'SUPER_ADMIN') {
+      socket.join('admins');
+      socket.join('managers');
+    } else if (user.role === 'MANAGER') {
+      socket.join('managers');
+      socket.join(`manager:${user.id}`);
+      for (const spId of user.managedSalespersonIds || []) socket.join(`team:${spId}`);
+    } else if (user.role === 'SALESPERSON' && user.salespersonId) {
+      socket.join('salespersons');
+      socket.join(`salesperson:${user.salespersonId}`);
+      socket.join(`team:${user.salespersonId}`);
+    }
+
+    socket.on('ping:telemetry', (payload) => {
+      const now = Date.now();
+      const current = socketRateLimits.get(socket.id) || { count: 0, resetAt: now + 60000 };
+      if (now > current.resetAt) {
+        current.count = 0;
+        current.resetAt = now + 60000;
+      }
+      current.count += 1;
+      socketRateLimits.set(socket.id, current);
+      if (current.count > 120) {
+        socket.emit('error', { message: 'Rate limit exceeded. Slow down.' });
+        return;
+      }
+      socket.emit('pong:telemetry', { serverTime: new Date().toISOString(), received: payload });
+    });
+
+    socket.on('subscribe:room', ({ room }: { room?: unknown } = {}) => {
+      if (typeof room !== 'string') return;
+      const sp = user.salespersonId;
+      const isAllowed =
+        user.role === 'SUPER_ADMIN' ||
+        room === `user:${user.id}` ||
+        (user.role === 'SALESPERSON' && (room === `salesperson:${sp}` || room === `team:${sp}`)) ||
+        (user.role === 'MANAGER' &&
+          (room === 'managers' ||
+            room === `manager:${user.id}` ||
+            (room.startsWith('team:') && (user.managedSalespersonIds || []).includes(room.slice(5)))));
+      if (isAllowed) {
+        socket.join(room);
+        socket.emit('subscribed:room', { room, status: 'ok' });
+      } else {
+        socket.emit('error', { message: 'Unauthorized room subscription attempt', room });
+      }
+    });
+
+    socket.on('disconnect', () => socketRateLimits.delete(socket.id));
+  });
+
+  setIO(io);
+  return io;
+}

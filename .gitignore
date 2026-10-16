@@ -58,3 +58,9 @@ yarn-error.log*
 uploads/
 scratch/
 tmp/
+
+# SalesGrid
+.test-uploads/
+test-results/
+playwright-report/
+*.tsbuildinfo
