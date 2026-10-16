@@ -4,7 +4,7 @@
   "private": true,
   "description": "SalesGrid — unified field sales, GPS tracking and order management (Next.js)",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "dev": "tsx watch --clear-screen=false --ignore ./.next server.ts",

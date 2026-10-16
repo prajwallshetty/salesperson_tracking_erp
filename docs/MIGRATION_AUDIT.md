@@ -117,6 +117,26 @@ All paths, methods, request bodies and response shapes are preserved. "Fix" = de
 24. Login screen pre-filled real seeded passwords.
 25. Socket toast used `order.totalAmount` (undefined; field is `grandTotal`).
 
+### Found while porting and testing the UI (also fixed)
+26. Notifications: role broadcasts matched by role only, so every salesperson saw notifications addressed to
+    *other* salespersons (`recipientId` + role `SALESPERSON`).
+27. Admin console read fields the API never returned: **Sales Force** page (blank names/contacts,
+    "0 Accounts", empty duty status), **Access Codes** (blank names, "N/A" codes), **Expenses** ("Staff Member"
+    for everyone, KPI cards always ₹0, search ignored by the API), **Performance** (always ₹0 / 0 orders;
+    "All Time" unsupported by the API; "new clients added" had no data source), **Products** (every category
+    "General"), **Assignments** ("Default Seed" instead of the assignment date).
+28. **Route History** read `points` but the API returns `segments`/`rawPoints`: the map always said
+    "No GPS points recorded"; visit distance always showed "0m"; payment mode blank.
+29. Live map: socket updates never moved markers (wrong envelope shape); every marker shown as live/pulsing
+    regardless of age; speed shown as 0 when unknown; hydration mismatch from a server-rendered clock.
+30. Admin "New Order" / "Record Collection" wizards never sent `salespersonId`, so they always failed for
+    admins; `Date.now()` idempotency keys made double-clicks create duplicates.
+31. Order approval UI had no Reject/Cancel even though the API and statuses support them.
+32. Sidebar filter links (`?status=`) were ignored or only read on first render.
+33. Revoke-access-code dialog claimed it "terminates all active sessions immediately" — it never did.
+34. Socket.IO rejected **same-origin** browsers in production (CORS callback allowed only listed origins).
+35. Deploy blockers: `.npmrc legacy-peer-deps` (for the Expo app) made `npm ci` fail in clean builds.
+
 ## 5. Database
 - Schema preserved exactly (no model, column, or index changes).
 - `prisma/migrations/0_init` is a **baseline** generated from the schema. Existing databases created with
@@ -132,27 +152,61 @@ and Profile (actual: Home/Clients/Orders/Expenses/More). Replaced by `docs/VERIF
 
 ## 7. Migration checklist
 
-Legend: ✅ verified by test · 🟡 implemented, manually verified only · ⛔ blocked/not applicable
+Legend: ✅ done and verified by automated tests · 🟡 done, partially verified (reason given) · ⛔ not applicable / blocked
 
 | # | Item | Status |
 |---|---|---|
 | 1 | Audit + checklist (this file) | ✅ |
-| 2 | Single Next.js 14 App Router app at repo root, TypeScript strict | ✅ |
-| 3 | Prisma schema moved to `prisma/`, baseline migration | ✅ |
-| 4 | Shared domain code de-duplicated into `src/lib` (one copy) | ✅ |
-| 5 | Unified auth: JWT in httpOnly cookie **and** Bearer (API contract preserved), middleware redirects | ✅ |
-| 6 | All endpoints in §3 ported as Route Handlers backed by `src/features/*/service.ts` | ✅ |
-| 7 | Socket.IO realtime preserved via custom `server.ts` (same events/rooms) | ✅ |
-| 8 | Admin/manager console pages ported with permission-aware nav | ✅ |
-| 9 | Salesperson mobile-first web UI at `/field/*` (all 6 legacy screens) | ✅ |
-| 10 | Browser GPS tracking, buffered upload, permission/denied/stale states | 🟡 (no real device in CI; tested with Playwright geolocation emulation) |
-| 11 | Offline outbox → `/api/sync/batch` using shared services | ✅ |
+| 2 | Single Next.js 14 App Router app at repo root, TypeScript strict | ✅ build + typecheck |
+| 3 | Prisma schema moved to `prisma/`, baseline migration | ✅ diffed against `db push` (identical) |
+| 4 | Shared domain code de-duplicated into `src/lib` (one copy instead of four) | ✅ |
+| 5 | Unified auth: httpOnly cookie **and** Bearer (contract preserved), role redirects, refresh, logout | ✅ I + E |
+| 6 | All endpoints in §3 ported as Route Handlers backed by `src/features/*/service.ts` | ✅ I |
+| 7 | Socket.IO realtime preserved via custom `server.ts` (same events/rooms) | ✅ I (event delivery), E (no socket errors) |
+| 8 | Admin/manager console pages ported, permission-aware nav, data mismatches fixed | ✅ E |
+| 9 | Salesperson mobile-first web UI at `/field/*` (all 6 legacy screens + catalogue) | ✅ E (Pixel 7 profile) |
+| 10 | Browser GPS tracking, buffered upload, permission/denied/stale states | 🟡 E with emulated geolocation; real-device checks in `DEVICE_TESTING.md` |
+| 11 | Offline outbox → `/api/sync/batch` using shared services | ✅ I + E |
 | 12 | Defects §4 fixed | ✅ |
-| 13 | Unit tests (calculator, geo, timezone, permissions) | ✅ |
-| 14 | API integration tests against real PostgreSQL | ✅ |
-| 15 | Playwright E2E per role | ✅ |
-| 16 | Single deployment (Render web service / Docker), env docs | 🟡 (config validated by build; not deployed from this session) |
+| 13 | Unit tests | ✅ 20 |
+| 14 | API integration tests against real PostgreSQL | ✅ 72 |
+| 15 | Playwright E2E per role on a production build | ✅ 22 |
+| 16 | Single deployment: Docker image, Render blueprint, PM2 | 🟡 Docker image built and run locally; Render not deployed from here |
 | 17 | Legacy `admin/`, `api/`, `app/`, `shared/` removed; rollback = commit `e1cf0ae` | ✅ |
-| 18 | Multi-tenant isolation | ⛔ no tenant concept exists; role/team isolation hardened instead |
-| 19 | Leads, targets, territories entities, subscriptions, password recovery, invitations | ⛔ not present in legacy system; not invented |
-| 20 | Native background GPS (app closed / screen off) | ⛔ not possible in a browser; legacy app did not implement it either |
+| 18 | Multi-tenant isolation | ⛔ no tenant concept exists; role/team isolation hardened and tested instead |
+| 19 | Leads, targets, territory entities, subscriptions/billing, password reset e-mail, invitations | ⛔ not in the legacy system; not invented (access codes remain the admin-issued credential path) |
+| 20 | Native background GPS (app closed / screen locked) | ⛔ impossible in browsers; legacy app was foreground-only too. Wake Lock offered. |
+
+## 8. Removed legacy files and services
+
+| Removed | Replaced by |
+|---|---|
+| `api/` (Express server, routes, middleware, socket, seed, tests) | `src/app/api/**`, `src/features/**`, `src/lib/**`, `server.ts`, `prisma/seed.ts`, `tests/integration` |
+| `admin/` (Next.js admin) | `src/app/(admin)/**`, `src/components/**` |
+| `app/` (Expo / React Native salesperson app) | `src/app/(salesperson)/field/**`, `src/features/field/**` |
+| `shared/` + 3 copies in `api/src/shared`, `admin/src/shared`, `app/src/shared` | `src/lib/domain`, `src/lib/validations` |
+| `.npmrc` (`legacy-peer-deps`) | not needed |
+| `docs/architecture.md`, `deployment_and_operations.md`, `independent_deployment_guide.md`, `mobile_device_testing_checklist.md`, `requirements_checklist.md` | `docs/ARCHITECTURE.md`, `DEPLOYMENT.md`, `DEVICE_TESTING.md`, `VERIFICATION_REPORT.md`, this file |
+| Render services `salesperson-erp-api`, `salesperson-erp-admin`, `salesperson-erp-app` | one `salesgrid` web service (`render.yaml`) |
+| Env vars `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SOCKET_URL`, `API_URL`, `EXPO_PUBLIC_API_URL`, `APP_SECRET`, `TOKEN_EXPIRY` | same-origin; `JWT_SECRET` |
+
+## 9. Known limitations and remaining tasks
+
+1. **Session revocation**: tokens are stateless (7 days). Revoking an access code or changing a password does
+   not end existing sessions; deactivating the user (status `INACTIVE` in the database) does, immediately.
+   There is no UI/endpoint to deactivate users or reset passwords (none existed before). Adding a
+   `tokenVersion` column would need a reviewed schema migration.
+2. **Single instance**: Socket.IO rooms, rate limiting and local-disk uploads are per process (see DEPLOYMENT.md).
+3. **Background GPS**: browsers stop geolocation when the app is backgrounded/locked; gaps are shown, not filled.
+   If continuous background tracking is a hard requirement, a native wrapper is needed; the API contract the
+   legacy Expo client used is unchanged, so such a client can talk to SalesGrid directly.
+4. **Stock can go negative** — preserved legacy rule (orders are not blocked by stock); the UI warns.
+5. **Audit logs** are visible to managers company-wide (legacy permission, preserved).
+6. Lint warnings (`exhaustive-deps`) remain in ported console pages; behaviour is intentional and tested.
+7. Uploaded files (`/api/files/<name>`) are readable by any signed-in user who has the URL (legacy behaviour;
+   names are unguessable). Per-record file authorization would need an ownership link in the schema.
+8. `?token=` query authentication is still accepted for legacy receipt/CSV links opened by older clients; the
+   new UI uses the cookie instead. Remove once no legacy clients remain (tokens in URLs can reach logs).
+9. The seed contains demo data only; it refuses to run in production without `ALLOW_PRODUCTION_SEED=true`.
+10. Real-device verification (`docs/DEVICE_TESTING.md`) and the production cut-over (`docs/DEPLOYMENT.md`) are
+   still to be done by the team.

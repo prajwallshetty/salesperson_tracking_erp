@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import jwt from 'jsonwebtoken';
+import { PrismaClient } from '@prisma/client';
 import { api, login, type Session } from './helpers';
+
+const db = new PrismaClient({ datasources: { db: { url: process.env.TEST_DATABASE_URL || 'postgresql://salesgrid:salesgrid@localhost:5432/salesgrid_test?schema=public' } } });
 
 describe('authentication & sessions', () => {
   let admin: Session;
@@ -75,6 +78,18 @@ describe('authentication & sessions', () => {
     const me = await api('/api/auth/me', { token: elevated });
     expect(me.json.user.role).toBe('SALESPERSON');
     expect((await api('/api/settings', { method: 'PUT', token: elevated, body: { settings: [] } })).status).toBe(403);
+  });
+
+  it('deactivating a user ends their existing sessions immediately', async () => {
+    const s = await login('vishal@erp.com');
+    expect((await api('/api/auth/me', { token: s.token })).status).toBe(200);
+    await db.user.update({ where: { id: s.user.id }, data: { status: 'INACTIVE' } });
+    try {
+      expect((await api('/api/auth/me', { token: s.token })).status).toBe(401);
+      expect((await api('/api/auth/login', { body: { identifier: 'vishal@erp.com', password: 'Password123!' } })).status).toBe(403);
+    } finally {
+      await db.user.update({ where: { id: s.user.id }, data: { status: 'ACTIVE' } });
+    }
   });
 
   it('logout clears the session cookie', async () => {

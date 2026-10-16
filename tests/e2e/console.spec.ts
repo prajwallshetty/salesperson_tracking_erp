@@ -77,8 +77,9 @@ test.describe('admin console', () => {
     await page.goto('/clients/assignments');
     await expect(page.getByText('Default Seed')).toHaveCount(0);
 
+    const pending = (await (await page.request.get('/api/expenses?status=SUBMITTED&limit=1')).json()).meta.total;
     await page.goto('/expenses');
-    await expect(page.getByText(/1 claims awaiting approval/)).toBeVisible();
+    await expect(page.getByText(`${pending} claims awaiting approval`)).toBeVisible();
     await expect(page.getByText('Staff Member')).toHaveCount(0);
 
     await page.goto('/salespersons/performance');
@@ -87,13 +88,14 @@ test.describe('admin console', () => {
     await expect(page.getByText(/^[1-9]\d* purchase orders$/)).toBeVisible();
   });
 
-  test('admin verifies a pending collection from the console', async ({ page }) => {
-    await login(page, 'rahul@erp.com');
-    const clients = await page.request.get('/api/clients');
-    const client = (await clients.json()).data[0];
-    const created = await page.request.post('/api/payments', { data: { clientId: client.id, amount: 1234, paymentMethod: 'UPI', transactionReference: 'UTR-E2E-VERIFY' } });
+  test('admin verifies a pending collection from the console', async ({ page, playwright, baseURL }) => {
+    // Salesperson records a collection through the API in a separate session.
+    const rep = await playwright.request.newContext({ baseURL });
+    await rep.post('/api/auth/login', { data: { identifier: 'rahul@erp.com', password: 'Password123!' } });
+    const client = (await (await rep.get('/api/clients')).json()).data[0];
+    const created = await rep.post('/api/payments', { data: { clientId: client.id, amount: 1234, paymentMethod: 'UPI', transactionReference: 'UTR-E2E-VERIFY' } });
     const receipt = (await created.json()).data.receiptNumber;
-    await page.context().clearCookies();
+    await rep.dispose();
 
     await login(page, 'admin@erp.com');
     await page.goto('/payments?status=PENDING');
