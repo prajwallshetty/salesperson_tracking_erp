@@ -1,11 +1,19 @@
-# FieldTrack ERP — REST API Reference Documentation
+# SalesGrid — REST API Reference
 
-**Base URL**: `http://localhost:4000/api`  
-**Interactive Swagger UI**: `http://localhost:4000/api/docs`  
-**Authentication**: All protected endpoints require a standard Bearer token in the `Authorization` header:  
-```http
-Authorization: Bearer <jwt-token>
-```
+The API is served by the unified SalesGrid application on the **same origin** as the UI
+(e.g. `https://salesgrid.example.com/api/...`). Request and response contracts are unchanged from the
+legacy Express API (`:4000/api`), so existing API clients only need their base URL updated.
+
+- **OpenAPI / Swagger UI**: `/api/docs` (spec at `/api/docs/spec.json`)
+- **Authentication**: either `Authorization: Bearer <jwt>` (token returned by `/api/auth/login`), or the
+  httpOnly `sg_session` cookie that the same endpoint sets for browsers.
+- **Authorization** is enforced server-side on every request (role, manager team, manager permission
+  flags, record ownership). See `docs/MIGRATION_AUDIT.md` §4 for scope fixes relative to the legacy API.
+- **Errors**: `{ "error": string }`, or `{ "error": "Validation failed", "details": [{ field, message }] }` (HTTP 400).
+
+Additions in the unified app (all additive): `POST /api/auth/refresh`, `range=all_time` on
+performance, `search` on `/api/expenses`, `assignedAt` on client list rows, `distanceFromClient` /
+`isException` on route-history visit events, `minutesSinceUpdate` on live status.
 
 ---
 

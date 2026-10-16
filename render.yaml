@@ -1,67 +1,40 @@
+# SalesGrid — one web service (UI + API + realtime) and one PostgreSQL database.
+# Replaces the three legacy services (salesperson-erp-api, -admin, -app).
 services:
-  # -------------------------------------------------------------------
-  # 1. Backend API Service
-  # -------------------------------------------------------------------
   - type: web
-    name: salesperson-erp-api
+    name: salesgrid
     runtime: node
     plan: starter
     region: oregon
-    buildCommand: npm install && npm run build:shared && cd api && npx prisma generate && npm run build
-    startCommand: cd api && node dist/index.js
-    healthCheckPath: /health
+    buildCommand: npm ci && npm run build
+    # Forward-only migrations; existing `db push` databases must be baselined once (see docs/DEPLOYMENT.md).
+    preDeployCommand: npx prisma migrate deploy
+    startCommand: npm start
+    healthCheckPath: /api/health
+    # Socket.IO and the in-memory rate limiter assume ONE instance (see docs/DEPLOYMENT.md before scaling).
+    numInstances: 1
+    disk:
+      name: uploads
+      mountPath: /var/data/uploads
+      sizeGB: 5
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 4000
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: salesgrid-db
+          property: connectionString
       - key: JWT_SECRET
-        generateValue: true
-      - key: JWT_EXPIRES_IN
-        value: 7d
-      - key: CORS_ORIGINS
-        value: https://example.com,https://admin.example.com
+        sync: false # reuse the legacy API's JWT_SECRET so existing sessions stay valid
       - key: DEFAULT_TIMEZONE
         value: Asia/Kolkata
-
-  # -------------------------------------------------------------------
-  # 2. Admin Web Dashboard
-  # -------------------------------------------------------------------
-  - type: web
-    name: salesperson-erp-admin
-    runtime: node
-    plan: starter
-    region: oregon
-    buildCommand: npm install && npm run build:shared && cd admin && npm run build
-    startCommand: cd admin && npx next start -p 3000
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: PORT
-        value: 3000
-      - key: NEXT_PUBLIC_API_URL
-        value: https://api.example.com
-      - key: NEXT_PUBLIC_SOCKET_URL
-        value: https://api.example.com
-      - key: API_URL
-        value: https://api.example.com
-
-  # -------------------------------------------------------------------
-  # 3. User Web App (Expo Static Web SPA)
-  # -------------------------------------------------------------------
-  - type: web
-    name: salesperson-erp-app
-    runtime: static
-    buildCommand: npm install && npm run build:shared && npm run build --workspace=@erp/app
-    staticPublishPath: ./app/dist
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
-    envVars:
-      - key: EXPO_PUBLIC_API_URL
-        value: https://api.example.com
-      - key: EXPO_PUBLIC_DEFAULT_TIMEZONE
+      - key: NEXT_PUBLIC_DEFAULT_TIMEZONE
         value: Asia/Kolkata
+      - key: UPLOAD_DIR
+        value: /var/data/uploads
+      - key: CORS_ORIGINS
+        sync: false # optional: only for cross-origin API clients
+
+databases:
+  - name: salesgrid-db
+    plan: basic-256mb

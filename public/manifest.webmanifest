@@ -1,0 +1,12 @@
+{
+  "name": "SalesGrid",
+  "short_name": "SalesGrid",
+  "description": "Field sales, GPS tracking, orders and collections",
+  "start_url": "/field",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F5F7F8",
+  "theme_color": "#081224",
+  "icons": [{ "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
