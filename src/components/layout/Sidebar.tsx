@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import {
   LayoutDashboard, Navigation2, Users, Building2, Package, ShoppingCart, CreditCard, FileBarChart,
-  Settings, ShieldAlert, ChevronDown, ChevronRight, LogOut, Receipt, X,
+  Settings, ShieldAlert, ChevronDown, ChevronRight, LogOut, Receipt, X, MonitorSmartphone,
 } from 'lucide-react';
 import { useSession } from '@/components/shared/SessionProvider';
 import { useSocket } from '@/components/shared/RealtimeProvider';
@@ -138,7 +138,20 @@ function usePendingCounts(enabled: Record<BadgeKey, boolean>) {
 export default function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname();
   const search = useSearchParams();
-  const { user, logout, hasPermission } = useSession();
+  const { user, logout, logoutEverywhere, hasPermission } = useSession();
+  const [confirmAll, setConfirmAll] = useState(false);
+  const [allError, setAllError] = useState('');
+  const [allBusy, setAllBusy] = useState(false);
+  const signOutEverywhere = async () => {
+    setAllBusy(true);
+    setAllError('');
+    try {
+      await logoutEverywhere();
+    } catch (e) {
+      setAllError((e as Error).message);
+      setAllBusy(false);
+    }
+  };
   const isAdmin = user?.role === 'SUPER_ADMIN';
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
 
@@ -268,6 +281,18 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
         </nav>
 
         <div className="p-3 border-t border-[#D8DFE4]">
+          {confirmAll && (
+            <div role="dialog" aria-label="Sign out of all devices" className="mb-2 p-3 rounded-xl bg-white border border-[#D8DFE4] text-[12px] text-[#0B1320] space-y-2">
+              <p>Sign out of SalesGrid on every browser and device, including this one?</p>
+              {allError && <p className="text-[#991B1B]">{allError}</p>}
+              <div className="flex gap-2 justify-end">
+                <button onClick={() => setConfirmAll(false)} className="px-2.5 py-1 rounded-md border border-[#D8DFE4]">Cancel</button>
+                <button onClick={signOutEverywhere} disabled={allBusy} className="px-2.5 py-1 rounded-md bg-[#991B1B] text-white disabled:opacity-60">
+                  {allBusy ? 'Signing out…' : 'Sign out everywhere'}
+                </button>
+              </div>
+            </div>
+          )}
           <div className="flex items-center justify-between px-2 py-1.5 rounded-xl">
             <div className="flex items-center gap-2.5 overflow-hidden">
               <div className="w-8 h-8 rounded-full bg-[#081224] text-[#B4E39C] flex items-center justify-center font-semibold text-[11px] shrink-0">
@@ -278,9 +303,14 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
                 <p className="text-[10px] text-[#586570] uppercase tracking-wider">{user?.role?.replace('_', ' ')}</p>
               </div>
             </div>
-            <button onClick={logout} title="Sign out" aria-label="Sign out" className="p-2 text-[#7E8B95] hover:text-[#991B1B] hover:bg-white/80 rounded-md">
-              <LogOut className="w-4 h-4" />
-            </button>
+            <div className="flex shrink-0">
+              <button onClick={() => setConfirmAll(true)} title="Sign out of all devices" aria-label="Sign out of all devices" className="p-2 text-[#7E8B95] hover:text-[#991B1B] hover:bg-white/80 rounded-md">
+                <MonitorSmartphone className="w-4 h-4" />
+              </button>
+              <button onClick={() => logout()} title="Sign out" aria-label="Sign out" className="p-2 text-[#7E8B95] hover:text-[#991B1B] hover:bg-white/80 rounded-md">
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       </aside>

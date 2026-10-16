@@ -1,6 +1,6 @@
 # SalesGrid — Verification Report
 
-Run date: 2026-10-16 · Commit: see `git log` (branch `claude/salesgrid-nextjs-migration-xcnkmr`)
+Run date: 2026-10-16 (Phase 2 re-run the same day) · Commit: see `git log` (branch `claude/salesgrid-nextjs-migration-xcnkmr`)
 Environment: Node 22, PostgreSQL 16 (local), Chromium 141 via Playwright 1.56.1.
 
 ## Summary
@@ -9,11 +9,14 @@ Environment: Node 22, PostgreSQL 16 (local), Chromium 141 via Playwright 1.56.1.
 |---|---|---|
 | TypeScript (`tsc --noEmit`, strict) | ✅ 0 errors | `npm run typecheck` |
 | Lint (`next lint`) | ✅ 0 errors, 20 warnings | all warnings are `react-hooks/exhaustive-deps` in ported legacy console pages |
-| Production build (`next build`) | ✅ | 57 API route handlers (+ `/health` alias), 31 pages, middleware |
-| Unit tests | ✅ 20 / 20 | `tests/unit` (5 files) |
-| API integration tests (real PostgreSQL, real server) | ✅ 72 / 72 | `tests/integration` (9 files) |
-| End-to-end (production build, Playwright) | ✅ 22 / 22 | `tests/e2e` — desktop console + Pixel 7 field app |
+| Production build (`next build`) | ✅ | 60 API route handlers (+ `/health` alias), 31 pages, middleware |
+| Unit tests | ✅ 23 / 23 | `tests/unit` (6 files) |
+| API integration tests (real PostgreSQL, real server) | ✅ 84 / 84 | `tests/integration` (10 files) |
+| Multi-instance (2 production servers + Redis) | ✅ 5 / 5 | `tests/multi-instance` |
+| End-to-end (production build, Playwright) | ✅ 25 / 25 | `tests/e2e` — desktop console + Pixel 7 field app |
 | Baseline migration ≡ legacy `db push` schema | ✅ | `prisma migrate diff` between both databases: empty |
+| Migrations ≡ `schema.prisma` (no drift) | ✅ | `prisma migrate diff --from-migrations … --to-schema-datamodel … --exit-code` → 0 |
+| Phase 2 migration on a populated, baselined database | ✅ | dev database: `migrate deploy` applied `1_session_revocation_and_file_ownership`; row counts of users/orders/payments/ledger/expenses unchanged; all users `tokenVersion` 0; `check:env` OK afterwards (it reported the pending migration before) |
 | Docker image build + run | ✅ (with sandbox caveat) | Image built; container applied migrations to an empty DB, `/api/health` healthy, Docker HEALTHCHECK healthy, cookie session accepted by middleware with runtime `JWT_SECRET`, seed refused in production. Sandbox build used `node:22-bookworm` instead of `-slim` because the sandbox proxy blocks plain-HTTP Debian mirrors (`apt-get`). |
 | Render deployment | ⏸ not performed | No Render access from this environment; `render.yaml` reviewed only. |
 | Real-device GPS / camera / installed PWA | ⏸ not performed | Emulated geolocation only. See `docs/DEVICE_TESTING.md`. |
@@ -51,7 +54,13 @@ Legend: **I** = integration test (HTTP against real server + DB assertions) · *
 | Console pages | All 17 pages render without console errors or 5xx; real data shown (names, counts, categories, KPIs); sidebar badges from DB; filters follow the URL | E, M |
 | Responsive | No horizontal overflow at 360 px on all 17 console pages and 12 field pages; console drawer on phones | E, M |
 | Field app | Login → home; Start Day with GPS; visit; order; collection + receipt; expense; offline order; route; End Day summary; attendance history; denied-permission flow | E |
-| Config validation | Insecure/placeholder `JWT_SECRET` rejected in production; `check:env` checks DB and migration state | M |
+| Config validation | Insecure/placeholder `JWT_SECRET` rejected in production; `check:env` checks DB, unapplied migrations and Redis | M |
+| **Phase 2** — sign out everywhere | Self (console sidebar, field profile), admin/manager per salesperson, and on access-code revoke (`endSessions`); every older Bearer/cookie token → 401; refresh refused; live socket dropped and reconnect refused; scope: manager only for own team, salesperson for nobody else; audit row written; new login works | I, E |
+| **Phase 2** — legacy tokens | Token in the exact legacy shape `{ userId, role }` accepted while `tokenVersion` is 0 | U, I |
+| **Phase 2** — revoked session on pages | Layout → `/api/auth/session-ended` → cookie cleared → `/login?expired=1&next=<page>`; no redirect loop (also fixes the same loop for deactivated users); off-site `next` ignored | I, E |
+| **Phase 2** — file authorization | Unattached upload: uploader + super admin only; attached to an expense: owner's manager can read, other salespersons 404; pre-existing file (no ownership row): super admin only unless referenced | I |
+| **Phase 2** — `?token=` | Rejected by default on API and socket; `ALLOW_QUERY_TOKEN=true` restores it; receipt PDF opens with the cookie | U, I |
+| **Phase 2** — multi-instance | GPS fix posted to instance A reaches a dashboard socket on instance B; sign-out on A drops the socket on B; login rate limit counted across both; Redis killed → health 200 with `"redis": "down"`, logins still served | multi-instance |
 
 ## Not verified here (and why)
 
@@ -61,3 +70,4 @@ Legend: **I** = integration test (HTTP against real server + DB assertions) · *
 | Map tiles | OpenStreetMap tiles blocked by this sandbox's network policy (map container renders grey) | Check once deployed |
 | Production deployment, DNS, TLS, Render disk | No deployment access | Follow `docs/DEPLOYMENT.md` cut-over |
 | Load beyond test scale (thousands of reps) | Out of scope for this run | Load test `/api/location/batch` and dashboards |
+| Multi-instance on real infrastructure (load balancer, managed Redis, shared `UPLOAD_DIR`) | Tested only as two local processes | Verify WebSocket upgrade through the balancer and shared storage before scaling out |

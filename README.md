@@ -22,7 +22,7 @@ Tailwind CSS · Leaflet / OpenStreetMap · Recharts · Zod · Vitest · Playwrig
 
 ```
 server.ts                  Custom server: Next.js + Socket.IO on one port
-prisma/                    schema.prisma, migrations/ (0_init baseline), seed.ts (dev/demo only)
+prisma/                    schema.prisma, migrations/ (0_init baseline + reviewed changes), seed.ts (dev/demo only)
 src/app/(auth)/login       Unified login (password or access code), role-based redirect
 src/app/(admin)/…          Admin & manager console pages
 src/app/(salesperson)/field Salesperson app (mobile-first)
@@ -32,6 +32,7 @@ src/features/field/        Browser GPS tracker, offline outbox, field context
 src/lib/                   auth, permissions, db, http, realtime, time, domain (calculator, geo), validations
 src/middleware.ts          Page redirects by role (UX only — the API authorizes every request itself)
 tests/unit|integration|e2e Vitest unit, API-against-PostgreSQL integration, Playwright end-to-end
+tests/multi-instance       Two production instances sharing PostgreSQL + Redis
 ```
 
 ## Local development
@@ -55,11 +56,14 @@ Set `SHOW_DEMO_LOGINS=true` to show quick-fill buttons on the login page.
 
 ## Database & migrations
 
-- The Prisma schema is **unchanged** from the legacy API. `prisma/migrations/0_init` is a baseline generated
-  from it and verified to produce a schema identical to the legacy `prisma db push`.
-- **Existing database (created by `db push`)** — mark the baseline as applied once; no SQL is executed:
+- `prisma/migrations/0_init` is a baseline generated from the legacy schema and verified to produce a schema
+  identical to the legacy `prisma db push`. `1_session_revocation_and_file_ownership` is the only change
+  since: additive (`users.tokenVersion`, `uploaded_files`), reviewed, applied by `prisma migrate deploy`.
+- **Existing database (created by `db push`)** — mark the baseline as applied once (no SQL is executed),
+  then apply the later migrations:
   ```bash
   npm run db:baseline            # prisma migrate resolve --applied 0_init
+  npm run db:migrate             # prisma migrate deploy
   ```
 - **New database**: `npm run db:migrate` (`prisma migrate deploy`).
 - Future schema changes: `npm run db:migrate:dev -- --name <change>` locally, review the SQL, commit, and
@@ -73,6 +77,7 @@ npm run lint
 npm run test:unit               # pure business logic (calculator, geo, timezone, permissions, http helpers)
 npm run test:integration        # starts the real server against a disposable *_test database
 npm run test:e2e                # builds for production, then Playwright (desktop console + mobile field app)
+npm run build && npm run test:multi-instance   # two instances + Redis (needs redis-server or TEST_REDIS_URL)
 ```
 
 Integration and E2E tests **reset** the database in `TEST_DATABASE_URL`
@@ -90,7 +95,9 @@ npx prisma migrate deploy
 npm start                        # NODE_ENV=production tsx server.ts
 ```
 
-Health check: `GET /api/health` (checks the database; reports whether realtime is active).
+Health check: `GET /api/health` (checks the database; reports whether realtime is active and, when
+`REDIS_URL` is set, whether Redis is reachable). One instance needs nothing else; for several instances
+set `REDIS_URL` and share `UPLOAD_DIR` (see DEPLOYMENT.md).
 
 ## Documentation
 

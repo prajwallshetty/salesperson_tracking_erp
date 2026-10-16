@@ -24,6 +24,10 @@ export const config = {
   defaultTimezone: process.env.DEFAULT_TIMEZONE || 'Asia/Kolkata',
   /** Extra origins allowed to call the API cross-origin (e.g. a native client during transition). */
   corsOrigins: parseList(process.env.CORS_ORIGINS),
+  /** Legacy `?token=` authentication (off unless ALLOW_QUERY_TOKEN=true). */
+  allowQueryToken: process.env.ALLOW_QUERY_TOKEN === 'true',
+  /** Optional shared state for running more than one instance (Socket.IO adapter, rate limits). */
+  redisUrl: process.env.REDIS_URL || '',
   /** Secure cookies require HTTPS; disable only for plain-HTTP local/LAN testing. */
   secureCookies: process.env.COOKIE_SECURE ? process.env.COOKIE_SECURE === 'true' : process.env.NODE_ENV === 'production',
 };
@@ -43,6 +47,11 @@ export function validateConfig(env: NodeJS.ProcessEnv = process.env): ConfigVali
     errors.push('DATABASE_URL is missing. Please configure a valid PostgreSQL connection string.');
   } else if (!dbUrl.startsWith('postgresql://') && !dbUrl.startsWith('postgres://')) {
     errors.push('DATABASE_URL is invalid: must start with postgresql:// or postgres://');
+  }
+
+  const redisUrl = env.REDIS_URL;
+  if (redisUrl && !/^rediss?:\/\//.test(redisUrl)) {
+    errors.push('REDIS_URL is invalid: must start with redis:// or rediss://');
   }
 
   if (nodeEnv === 'production') {

@@ -6,7 +6,8 @@ legacy Express API (`:4000/api`), so existing API clients only need their base U
 
 - **OpenAPI / Swagger UI**: `/api/docs` (spec at `/api/docs/spec.json`)
 - **Authentication**: either `Authorization: Bearer <jwt>` (token returned by `/api/auth/login`), or the
-  httpOnly `sg_session` cookie that the same endpoint sets for browsers.
+  httpOnly `sg_session` cookie that the same endpoint sets for browsers. The legacy `?token=` query
+  parameter is accepted only when the server sets `ALLOW_QUERY_TOKEN=true`.
 - **Authorization** is enforced server-side on every request (role, manager team, manager permission
   flags, record ownership). See `docs/MIGRATION_AUDIT.md` §4 for scope fixes relative to the legacy API.
 - **Errors**: `{ "error": string }`, or `{ "error": "Validation failed", "details": [{ field, message }] }` (HTTP 400).
@@ -14,6 +15,10 @@ legacy Express API (`:4000/api`), so existing API clients only need their base U
 Additions in the unified app (all additive): `POST /api/auth/refresh`, `range=all_time` on
 performance, `search` on `/api/expenses`, `assignedAt` on client list rows, `distanceFromClient` /
 `isException` on route-history visit events, `minutesSinceUpdate` on live status.
+Phase 2 (additive): `POST /api/auth/logout-all`, `POST /api/auth/sessions/revoke`,
+`GET /api/auth/session-ended`, `endSessions` + `sessionsEnded` on `POST /api/access-codes/revoke`,
+`redis` on `/api/health`. Behaviour changes: `GET /api/files/<name>` is now per-record (404 for users
+who cannot see the referencing record), and `?token=` is off by default.
 
 ---
 
@@ -53,6 +58,17 @@ performance, `search` on `/api/expenses`, `assignedAt` on client list rows, `dis
 ### 1.3 Logout
 - **Endpoint**: `POST /api/auth/logout`
 - **Access**: Authenticated
+- Clears the session cookie on this device only.
+
+### 1.4 Sign out of all devices
+- **Endpoint**: `POST /api/auth/logout-all`
+- **Access**: Authenticated
+- Ends every session of the caller (all tokens issued so far, including the current one) and clears the cookie.
+
+### 1.5 End another user's sessions
+- **Endpoint**: `POST /api/auth/sessions/revoke`
+- **Access**: `SUPER_ADMIN` (any user); `MANAGER` (salespersons on their team)
+- **Body**: `{ "userId": "<uuid>" }` → `200 { "message": … }`, `403` outside scope, `404` unknown user.
 
 ---
 

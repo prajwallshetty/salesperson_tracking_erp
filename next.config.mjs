@@ -16,7 +16,7 @@ const nextConfig = {
   eslint: { dirs: ['src', 'tests', 'prisma', 'scripts'] },
   experimental: {
     // pdfkit reads its font metrics from disk at runtime and must not be bundled.
-    serverComponentsExternalPackages: ['pdfkit', '@prisma/client', 'bcryptjs'],
+    serverComponentsExternalPackages: ['pdfkit', '@prisma/client', 'bcryptjs', 'redis', '@redis/client'],
   },
   async headers() {
     const headers = [...securityHeaders];

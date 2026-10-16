@@ -4,7 +4,10 @@
  * Exits non-zero on any problem. Reads .env files the same way the server does.
  */
 import '../src/lib/loadEnv';
+import { readdirSync } from 'fs';
+import path from 'path';
 import { PrismaClient } from '@prisma/client';
+import { createClient } from 'redis';
 import { validateConfig } from '../src/lib/config';
 
 async function main() {
@@ -19,10 +22,31 @@ async function main() {
       const pending = await prisma.$queryRaw<{ n: bigint }[]>`SELECT COUNT(*)::bigint AS n FROM "_prisma_migrations" WHERE finished_at IS NULL`.catch(() => null);
       if (pending === null) problems.push('Database has no _prisma_migrations table: baseline it with `npm run db:baseline` (existing db) or run `npm run db:migrate` (new db).');
       else if (Number(pending[0].n) > 0) problems.push('A migration is in a failed/unfinished state — inspect `npx prisma migrate status`.');
+      else {
+        const applied = new Set(
+          (await prisma.$queryRaw<{ migration_name: string }[]>`SELECT migration_name FROM "_prisma_migrations" WHERE finished_at IS NOT NULL`).map((r) => r.migration_name)
+        );
+        const dir = path.join(process.cwd(), 'prisma', 'migrations');
+        const missing = readdirSync(dir, { withFileTypes: true }).filter((d) => d.isDirectory() && !applied.has(d.name)).map((d) => d.name);
+        if (missing.length) problems.push(`Migrations not applied yet: ${missing.join(', ')} — review the SQL, then run \`npm run db:migrate\`.`);
+      }
     } catch (e) {
       problems.push(`Cannot connect to DATABASE_URL: ${(e as Error).message.split('\n')[0]}`);
     } finally {
       await prisma.$disconnect();
+    }
+  }
+
+  if (process.env.REDIS_URL && /^rediss?:\/\//.test(process.env.REDIS_URL)) {
+    const redis = createClient({ url: process.env.REDIS_URL, socket: { connectTimeout: 5000, reconnectStrategy: false } });
+    redis.on('error', () => undefined);
+    try {
+      await redis.connect();
+      await redis.ping();
+    } catch (e) {
+      problems.push(`Cannot connect to REDIS_URL: ${(e as Error).message}`);
+    } finally {
+      await redis.disconnect().catch(() => undefined);
     }
   }
 

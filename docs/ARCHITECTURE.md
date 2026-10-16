@@ -29,12 +29,21 @@ Actions or client components (the client only previews order totals with the sam
 
 - Login (`/api/auth/login` password; `/api/auth/access-code-login` admin-issued code with 5-attempt lockout)
   returns the legacy `{ token, user, expiresIn }` body **and** sets an httpOnly, SameSite=Lax,
-  Secure-in-production `sg_session` cookie containing the same JWT (`{ userId, role }`, 7 days).
+  Secure-in-production `sg_session` cookie containing the same JWT (`{ userId, role, tv }`, 7 days).
+  `tv` is the user's session version (`users.tokenVersion`); legacy tokens without it count as 0.
 - Every API request re-loads the user from the database: deactivated users are rejected immediately and
   role/team/permissions always come from the database, never from the token.
 - `/api/auth/refresh` re-issues a token (sliding session) for tokens older than one hour.
-- Logout clears the cookie. Revoking an access code blocks future sign-ins with it; already-issued
-  sessions remain valid until expiry (no token revocation list exists — see known limitations).
+- Logout clears the cookie on this device. **Sign out everywhere** (`POST /api/auth/logout-all`, or
+  `POST /api/auth/sessions/revoke { userId }` by a super admin / the salesperson's manager, or
+  `endSessions: true` when revoking an access code) increments `tokenVersion`: every older token fails on
+  its next API call, page load or socket handshake, and the user's live sockets are disconnected.
+  The same check (`resolveSessionToken`) runs for Route Handlers, layouts and Socket.IO.
+- Token lookup: `Authorization: Bearer`, then the cookie. `?token=` is accepted only with
+  `ALLOW_QUERY_TOKEN=true`.
+- The edge middleware checks only the signature (no database). When a layout finds a signed but invalid
+  session it redirects to `/api/auth/session-ended`, which clears the cookie and shows
+  `/login?expired=1&next=<page>`. Redirecting straight to `/login` would loop through the middleware.
 
 ## Authorization model
 
@@ -97,3 +106,16 @@ Same events, envelope and rooms as the legacy server (`user:`, `admins`, `manage
 `salesperson:<spId>`, plus `salespersons` for role broadcasts). Browser sockets authenticate with the
 session cookie; same-origin is checked explicitly, cross-origin only for `CORS_ORIGINS`. If the socket is
 down the UI keeps working through polling.
+
+With `REDIS_URL` set, Socket.IO uses `@socket.io/redis-adapter`: an emit or `disconnectSockets()` on one
+instance reaches matching sockets on all instances. API rate-limit counters move to Redis too (atomic
+INCR + expiry). If Redis becomes unreachable, the rate limiter falls back to per-process counters rather
+than rejecting requests, and `/api/health` reports `"redis": "down"`.
+
+## Files
+
+`POST /api/files/upload` checks the declared type against the file's bytes, stores the file under
+`UPLOAD_DIR` and records the uploader in `uploaded_files`. `GET /api/files/<name>` serves a file only to:
+a super admin; its uploader; or a user who can access a payment (`proofUrl`), visit
+(`photoUrl`/`signatureUrl`/`voiceNoteUrl`) or expense (`receiptUrl`) referencing it (own records for
+salespersons, team records for managers). Everyone else gets 404, so file names cannot be probed.

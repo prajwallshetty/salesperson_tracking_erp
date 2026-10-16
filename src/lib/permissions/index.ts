@@ -54,6 +54,8 @@ export interface AuthenticatedUser {
   phone: string;
   role: Role;
   status: string;
+  /** Server-only: current session version (see users.tokenVersion). */
+  tokenVersion?: number;
   salespersonId?: string;
   employeeCode?: string;
   territory?: string;

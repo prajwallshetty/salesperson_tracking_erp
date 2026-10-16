@@ -3,6 +3,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { authedRoute, json } from '@/lib/http/handler';
 import { config } from '@/lib/config';
+import { prisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -16,7 +17,7 @@ const ALLOWED: Record<string, { ext: string; magic: (b: Buffer) => boolean }> = 
 };
 
 /** Legacy contract: multipart field `file`; returns `{ url: '/api/files/<name>' }`. */
-export const POST = authedRoute({}, async ({ req }) => {
+export const POST = authedRoute({}, async ({ req, user }) => {
   const form = await req.formData().catch(() => null);
   const file = form?.get('file');
   if (!file || typeof file === 'string') return json({ error: 'No file uploaded' }, 400);
@@ -31,6 +32,8 @@ export const POST = authedRoute({}, async ({ req }) => {
   await fs.mkdir(config.uploadDir, { recursive: true });
   const filename = `file-${Date.now()}-${randomBytes(6).toString('hex')}${spec.ext}`;
   await fs.writeFile(path.join(config.uploadDir, filename), buf);
+  // Ownership row: lets the uploader read the file before any record references it.
+  await prisma.uploadedFile.create({ data: { filename, uploadedById: user.id, mimeType: file.type, size: buf.length } });
 
   return json({ message: 'File uploaded successfully', url: `/api/files/${filename}`, filename, size: buf.length, mimetype: file.type });
 });

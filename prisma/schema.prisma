@@ -91,6 +91,8 @@ model User {
   passwordHash String
   role         Role        @default(SALESPERSON)
   status       UserStatus  @default(ACTIVE)
+  /// Incremented to invalidate every session token issued before (sign out everywhere).
+  tokenVersion Int         @default(0)
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 
@@ -105,6 +107,7 @@ model User {
   approvedExpenses     Expense[]            @relation("ExpenseApprover")
   rejectedExpenses     Expense[]            @relation("ExpenseRejecter")
   reimbursedExpenses   Expense[]            @relation("ExpenseReimburser")
+  uploadedFiles        UploadedFile[]
 
   @@map("users")
 }
@@ -638,4 +641,19 @@ model ExpenseHistory {
 
   @@index([expenseId, createdAt])
   @@map("expense_histories")
+}
+
+/// Ownership of files written by /api/files/upload (files uploaded before this table existed have no row).
+model UploadedFile {
+  id           String   @id @default(uuid())
+  filename     String   @unique
+  uploadedById String
+  mimeType     String
+  size         Int
+  createdAt    DateTime @default(now())
+
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id])
+
+  @@index([uploadedById])
+  @@map("uploaded_files")
 }

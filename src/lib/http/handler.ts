@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client';
 import { authenticateRequest } from '@/lib/auth/session';
 import { hasPermission, type AuthenticatedUser, type ManagerPermissionKey, type Role } from '@/lib/permissions';
 import { HttpError } from './errors';
-import { API_LIMIT, hit, type RateLimitRule } from './rateLimit';
+import { API_LIMIT, hitShared, type RateLimitRule } from './rateLimit';
 import { clientIp, userAgent } from './request';
 
 export interface RequestContext<P = Record<string, string>> {
@@ -64,9 +64,9 @@ function baseContext<P>(req: NextRequest, args: RouteArgs | undefined): RequestC
   };
 }
 
-function applyRateLimit(rule: RateLimitRule, ip: string): Response | null {
+async function applyRateLimit(rule: RateLimitRule, ip: string): Promise<Response | null> {
   if (process.env.DISABLE_RATE_LIMIT === 'true') return null;
-  const r = hit(rule, ip);
+  const r = await hitShared(rule, ip);
   if (!r.allowed) {
     return NextResponse.json(
       { error: rule.message },
@@ -83,7 +83,7 @@ export function publicRoute<P = Record<string, string>>(
 ) {
   return async (req: NextRequest, args?: RouteArgs): Promise<Response> => {
     const ctx = baseContext<P>(req, args);
-    const limited = applyRateLimit(opts.rateLimit ?? API_LIMIT, ctx.ip);
+    const limited = await applyRateLimit(opts.rateLimit ?? API_LIMIT, ctx.ip);
     if (limited) return limited;
     try {
       return await handler(ctx);
@@ -100,7 +100,7 @@ export function authedRoute<P = Record<string, string>>(
 ) {
   return async (req: NextRequest, args?: RouteArgs): Promise<Response> => {
     const base = baseContext<P>(req, args);
-    const limited = applyRateLimit(opts.rateLimit ?? API_LIMIT, base.ip);
+    const limited = await applyRateLimit(opts.rateLimit ?? API_LIMIT, base.ip);
     if (limited) return limited;
     try {
       const { user, tokenIat } = await authenticateRequest(req);

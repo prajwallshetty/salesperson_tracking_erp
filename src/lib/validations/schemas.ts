@@ -131,6 +131,8 @@ export const generateAccessCodeSchema = z.object({
 export const revokeAccessCodeSchema = z.object({
   codeId: z.string().uuid().optional(),
   userId: z.string().uuid().optional(),
+  /** Also sign the user out of every device (default false: legacy behaviour). */
+  endSessions: z.boolean().optional(),
 });
 
 // ==================== EXPENSE SCHEMAS ====================

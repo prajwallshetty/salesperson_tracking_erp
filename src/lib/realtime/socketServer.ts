@@ -1,16 +1,21 @@
 import type { Server as HttpServer } from 'http';
 import { Server as SocketIOServer, type Socket } from 'socket.io';
-import { verifySessionToken } from '@/lib/auth/tokens';
-import { loadAuthenticatedUser } from '@/lib/auth/session';
+import { resolveSessionToken } from '@/lib/auth/session';
+import { config } from '@/lib/config';
 import { SESSION_COOKIE } from '@/lib/auth/constants';
 import { setIO } from './emitter';
+import { createAdapter } from '@socket.io/redis-adapter';
+import { newRedisClient, redisEnabled } from '@/lib/redis';
 
 /** Same rooms, events and authorization as the legacy API's socket server. */
 
 const socketRateLimits = new Map<string, { count: number; resetAt: number }>();
 
 function tokenFromHandshake(socket: Socket): string | null {
-  const auth = socket.handshake.auth?.token || socket.handshake.headers?.authorization || socket.handshake.query?.token;
+  const auth =
+    socket.handshake.auth?.token ||
+    socket.handshake.headers?.authorization ||
+    (config.allowQueryToken ? socket.handshake.query?.token : undefined);
   if (auth) {
     const s = String(auth);
     return s.startsWith('Bearer ') ? s.slice(7) : s;
@@ -52,9 +57,8 @@ export function initSocketServer(httpServer: HttpServer, allowedOrigins: string[
     try {
       const token = tokenFromHandshake(socket);
       if (!token) return next(new Error('Authentication error: Missing token'));
-      const payload = verifySessionToken(token);
+      const { user, payload } = await resolveSessionToken(token);
       if (!payload) return next(new Error('Authentication error: Invalid or expired token'));
-      const user = await loadAuthenticatedUser(payload.userId);
       if (!user) return next(new Error('Authentication error: User account is inactive or revoked'));
       socket.data.user = user;
       return next();
@@ -122,4 +126,18 @@ export function initSocketServer(httpServer: HttpServer, allowedOrigins: string[
 
   setIO(io);
   return io;
+}
+
+/**
+ * Multi-instance mode: route every emit (rooms, disconnectSockets) through Redis pub/sub so a
+ * location update received by one instance reaches dashboards connected to another.
+ */
+export async function attachRedisAdapter(io: SocketIOServer): Promise<boolean> {
+  if (!redisEnabled()) return false;
+  const pub = newRedisClient();
+  const sub = pub.duplicate();
+  sub.on('error', (err) => console.error('[redis:sub]', err.message));
+  await Promise.all([pub.connect(), sub.connect()]);
+  io.adapter(createAdapter(pub, sub, { key: 'salesgrid:socket.io' }));
+  return true;
 }

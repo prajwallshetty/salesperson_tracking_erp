@@ -183,3 +183,22 @@ test('denied location permission is explained, and the day can still start witho
   await expect(page.getByText(/Location permission is blocked/)).toBeVisible();
   await ctx.close();
 });
+
+test('signing out with "every other device" also ends the session on a second phone', async ({ browser }) => {
+  const use = test.info().project.use;
+  const [ctxA, ctxB] = await Promise.all([browser.newContext({ ...use }), browser.newContext({ ...use })]);
+  const [a, b] = await Promise.all([ctxA.newPage(), ctxB.newPage()]);
+  await login(b, 'ahmed@erp.com');
+  await login(a, 'ahmed@erp.com');
+
+  await a.goto('/field/more/profile');
+  await a.getByRole('button', { name: 'Sign out' }).click();
+  const sheet = a.getByRole('dialog', { name: 'Sign out?' });
+  await sheet.getByLabel(/Also sign out on every other device/).check();
+  await sheet.getByRole('button', { name: 'Sign out' }).click();
+  await expect(a).toHaveURL(/\/login/);
+
+  await b.reload();
+  await expect(b).toHaveURL(/\/login\?expired=1/);
+  await Promise.all([ctxA.close(), ctxB.close()]);
+});

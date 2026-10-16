@@ -10,12 +10,13 @@ interface LoginUserRow {
   phone: string;
   role: Role;
   status: string;
+  tokenVersion?: number;
   salespersonProfile?: { id: string; employeeCode: string; territory: string; status: string } | null;
 }
 
 /** Legacy login response body + the httpOnly session cookie used by the browser UI. */
 export function loginResponse(user: LoginUserRow): NextResponse {
-  const token = signSessionToken(user.id, user.role);
+  const token = signSessionToken(user.id, user.role, user.tokenVersion ?? 0);
   const res = NextResponse.json({
     token,
     user: {

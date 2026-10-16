@@ -18,6 +18,9 @@ export const openApiSpec = {
     '/api/auth/logout': { post: op('Logout and clear session cookie') },
     '/api/auth/me': { get: op('Current user, role and manager permissions') },
     '/api/auth/refresh': { post: op('Renew the session token (sliding expiry)') },
+    '/api/auth/logout-all': { post: op('Sign out of all devices (ends every session of the caller)') },
+    '/api/auth/sessions/revoke': { post: op('End every session of a user { userId } (super admin, or the salesperson’s manager)') },
+    '/api/auth/session-ended': { get: op('Clear an invalid session cookie and redirect to /login?expired=1') },
     '/api/access-codes': { get: op('List access codes (admin / manager team)') },
     '/api/access-codes/generate': { post: op('Generate an access code (plaintext returned once)') },
     '/api/access-codes/revoke': { post: op('Revoke an access code') },
@@ -66,6 +69,6 @@ export const openApiSpec = {
     '/api/notifications/{id}/read': { put: op('Mark notification read') },
     '/api/notifications/read-all': { put: op('Mark all notifications read') },
     '/api/files/upload': { post: op('Upload receipt / proof (multipart field "file")') },
-    '/api/files/{filename}': { get: op('Download an uploaded file') },
+    '/api/files/{filename}': { get: op('Download an uploaded file (uploader, super admin, or users who can access the referencing payment/visit/expense)') },
   },
 };

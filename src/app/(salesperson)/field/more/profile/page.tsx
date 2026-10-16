@@ -7,11 +7,25 @@ import { useSession } from '@/components/shared/SessionProvider';
 import { useField, clearFieldData } from '@/features/field/FieldProvider';
 
 export default function Profile() {
-  const { user, logout } = useSession();
+  const { user, logout, logoutEverywhere } = useSession();
   const { outbox, dutyStatus } = useField();
   const [confirm, setConfirm] = useState(false);
+  const [everywhere, setEverywhere] = useState(false);
+  const [error, setError] = useState('');
 
   const signOut = async () => {
+    setError('');
+    if (everywhere) {
+      try {
+        // Server must confirm before local data is cleared.
+        await logoutEverywhere();
+      } catch (e) {
+        setError((e as Error).message);
+        return;
+      }
+      clearFieldData(user!.id);
+      return;
+    }
     clearFieldData(user!.id);
     await logout();
   };
@@ -50,6 +64,11 @@ export default function Profile() {
           {dutyStatus === 'ON_DUTY' && <Notice tone="warning">You are still on duty. Location tracking stops when you sign out; your shift stays open until you end the day.</Notice>}
           {outbox.length > 0 && <Notice tone="error">{outbox.length} record(s) have not synced yet and will be removed from this device if you sign out now. Sync first from More → Offline sync queue.</Notice>}
           <p>Signing out clears your cached data from this device.</p>
+          <label className="flex items-start gap-2 text-sm">
+            <input type="checkbox" className="mt-1" checked={everywhere} onChange={(e) => setEverywhere(e.target.checked)} />
+            <span>Also sign out on every other device (use this if a phone was lost or shared)</span>
+          </label>
+          {error && <Notice tone="error">{error}</Notice>}
         </div>
       </Sheet>
     </div>

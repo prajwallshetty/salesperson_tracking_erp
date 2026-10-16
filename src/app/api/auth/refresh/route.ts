@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
 export const POST = authedRoute({}, async ({ user, tokenIat }) => {
   const ageSeconds = tokenIat ? Math.floor(Date.now() / 1000) - tokenIat : Infinity;
   if (ageSeconds < REFRESH_MIN_AGE_SECONDS) return NextResponse.json({ refreshed: false });
-  const token = signSessionToken(user.id, user.role);
+  const token = signSessionToken(user.id, user.role, user.tokenVersion ?? 0);
   const res = NextResponse.json({ refreshed: true, token, expiresIn: '7d' });
   const { name, ...opts } = sessionCookieOptions();
   res.cookies.set(name, token, opts);

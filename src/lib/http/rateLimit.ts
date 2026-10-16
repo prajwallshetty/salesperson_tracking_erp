@@ -1,7 +1,10 @@
+import { getRedis, redisEnabled } from '@/lib/redis';
+
 /**
- * Fixed-window in-memory rate limiter (replaces express-rate-limit).
- * State is per process: correct for the single-instance custom server. If you scale to
- * multiple instances, put a shared store (e.g. Redis) behind `hit()`.
+ * Fixed-window rate limiter (replaces express-rate-limit).
+ * Without REDIS_URL, counters are per process (single instance). With REDIS_URL, counters are
+ * shared by every instance; if Redis is unreachable the per-process counters are used instead
+ * (requests are never rejected because Redis is down).
  */
 interface Bucket {
   count: number;
@@ -44,4 +47,28 @@ export function hit(rule: RateLimitRule, key: string, now = Date.now()): { allow
     for (const [k, b] of store) if (now >= b.resetAt) store.delete(k);
   }
   return { allowed: bucket.count <= rule.max, remaining: Math.max(0, rule.max - bucket.count), resetAt: bucket.resetAt };
+}
+
+// INCR + set the window expiry on first hit, atomically; returns [count, ms until reset].
+const WINDOW_SCRIPT = `local c = redis.call('INCR', KEYS[1])
+if c == 1 then redis.call('PEXPIRE', KEYS[1], ARGV[1]) end
+return {c, redis.call('PTTL', KEYS[1])}`;
+
+export async function hitShared(rule: RateLimitRule, key: string): Promise<{ allowed: boolean; remaining: number; resetAt: number }> {
+  if (redisEnabled()) {
+    try {
+      const redis = await getRedis();
+      if (redis) {
+        const [count, ttl] = (await redis.eval(WINDOW_SCRIPT, {
+          keys: [`salesgrid:rl:${rule.name}:${key}`],
+          arguments: [String(rule.windowMs)],
+        })) as [number, number];
+        const now = Date.now();
+        return { allowed: count <= rule.max, remaining: Math.max(0, rule.max - count), resetAt: now + Math.max(ttl, 0) };
+      }
+    } catch (err) {
+      console.error('[rate-limit] Redis unavailable, using per-process counters:', (err as Error).message);
+    }
+  }
+  return hit(rule, key);
 }

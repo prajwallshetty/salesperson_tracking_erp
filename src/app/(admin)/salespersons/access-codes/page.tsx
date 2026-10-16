@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import AdminShell from '@/components/layout/AdminShell';
 import { useAuth } from '@/components/shared/SessionProvider';
-import { apiFetch } from '@/lib/client/apiFetch';
+import { apiFetch, errorMessage } from '@/lib/client/apiFetch';
 import {
   KeyRound,
   ShieldAlert,
@@ -48,6 +48,8 @@ export default function AccessCodesPage() {
   const [revokeTarget, setRevokeTarget] = useState<any | null>(null);
   const [revoking, setRevoking] = useState(false);
   const [revokeReason, setRevokeReason] = useState('');
+  const [revokeEndSessions, setRevokeEndSessions] = useState(true);
+  const [revokeError, setRevokeError] = useState('');
 
   const fetchData = async () => {
     if (!token) return;
@@ -123,6 +125,7 @@ export default function AccessCodesPage() {
   const handleRevoke = async () => {
     if (!revokeTarget) return;
     setRevoking(true);
+    setRevokeError('');
     try {
       const res = await apiFetch('/api/access-codes/revoke', {
         method: 'POST',
@@ -132,16 +135,21 @@ export default function AccessCodesPage() {
         body: JSON.stringify({
           codeId: revokeTarget.id,
           reason: revokeReason.trim() || undefined,
+          endSessions: revokeEndSessions,
         }),
       });
 
       if (res.ok) {
         setRevokeTarget(null);
         setRevokeReason('');
+        setRevokeEndSessions(true);
         fetchData();
+      } else {
+        const body = await res.json().catch(() => ({}));
+        setRevokeError(body.error || 'Could not revoke the access code.');
       }
     } catch (err) {
-      console.error('Failed to revoke code:', err);
+      setRevokeError(errorMessage(err));
     } finally {
       setRevoking(false);
     }
@@ -508,14 +516,22 @@ export default function AccessCodesPage() {
                 />
               </div>
 
+              <label className="flex items-start gap-2 text-xs text-[#0B1320]">
+                <input type="checkbox" className="mt-0.5" checked={revokeEndSessions} onChange={(e) => setRevokeEndSessions(e.target.checked)} />
+                <span>Also sign {revokeTarget.userName} out on every device now</span>
+              </label>
+
               <div className="p-3 bg-rose-50 border border-rose-200 text-xs text-rose-800 rounded-lg">
-                Revoking this code stops {revokeTarget.userName} from signing in with it. Sessions already signed in stay valid until they expire (up to 7 days).
+                {revokeEndSessions
+                  ? `Revoking this code stops ${revokeTarget.userName} from signing in with it and ends every session they have open, including password sign-ins.`
+                  : `Revoking this code stops ${revokeTarget.userName} from signing in with it. Sessions already signed in stay valid until they expire (up to 7 days).`}
               </div>
+              {revokeError && <p role="alert" className="text-xs text-rose-700">{revokeError}</p>}
             </div>
 
             <div className="px-6 py-3 border-t border-[#CBD2D7] bg-[#F5F7F8] flex justify-end gap-3">
               <button
-                onClick={() => setRevokeTarget(null)}
+                onClick={() => { setRevokeTarget(null); setRevokeError(''); }}
                 className="px-4 py-2 text-xs font-semibold bg-white border border-[#CBD2D7] text-[#0B1320] rounded-lg hover:bg-gray-100"
               >
                 Cancel

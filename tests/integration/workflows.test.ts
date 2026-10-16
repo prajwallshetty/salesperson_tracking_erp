@@ -178,7 +178,10 @@ describe('field sales lifecycle', () => {
   });
 
   it('serves the PDF receipt to its owner and admins only', async () => {
-    const own = await fetch(`${process.env.TEST_BASE_URL}/api/payments/${paymentId}/receipt-pdf?token=${vishal.token}`);
+    // `?token=` links are off by default (ALLOW_QUERY_TOKEN); browsers open the PDF with the cookie.
+    const viaQuery = await fetch(`${process.env.TEST_BASE_URL}/api/payments/${paymentId}/receipt-pdf?token=${vishal.token}`);
+    expect(viaQuery.status).toBe(401);
+    const own = await fetch(`${process.env.TEST_BASE_URL}/api/payments/${paymentId}/receipt-pdf`, { headers: { Cookie: vishal.cookie } });
     expect(own.status).toBe(200);
     expect(own.headers.get('content-type')).toBe('application/pdf');
     expect(Buffer.from(await own.arrayBuffer()).subarray(0, 5).toString()).toBe('%PDF-');
