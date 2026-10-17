@@ -15,9 +15,9 @@ export const locationPointSchema = z.object({
   clientPointId: z.string().optional(),
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
-  accuracy: z.number().nullable().optional(),
-  speed: z.number().nullable().optional(),
-  heading: z.number().nullable().optional(),
+  accuracy: z.number().min(0).max(100000).nullable().optional(),
+  speed: z.number().min(0).max(2000).nullable().optional(),
+  heading: z.number().min(0).max(360).nullable().optional(),
   batteryLevel: z.number().min(0).max(100).nullable().optional(),
   networkType: z.string().nullable().optional(),
   deviceId: z.string().nullable().optional(),
@@ -26,7 +26,13 @@ export const locationPointSchema = z.object({
 
 export const locationUpdateSchema = z.object({
   sessionId: z.string().uuid().optional(),
-  points: z.array(locationPointSchema).min(1, 'At least one coordinate point is required'),
+  points: z.array(locationPointSchema).min(1, 'At least one coordinate point is required').max(500, 'At most 500 points per request'),
+});
+
+/** The phone's own report of its location capability (see TrackingDeviceState). */
+export const trackingStatusSchema = z.object({
+  state: z.enum(['TRACKING', 'PERMISSION_DENIED', 'BACKGROUND_DENIED', 'GPS_DISABLED', 'STOPPED']),
+  detail: z.string().trim().max(200).optional(),
 });
 
 export const startAttendanceSchema = z.object({

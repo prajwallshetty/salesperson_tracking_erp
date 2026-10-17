@@ -94,6 +94,7 @@ export const SOCKET_EVENTS = {
   
   // Real-time events
   LOCATION_UPDATE: 'location:update',
+  TRACKING_STATE: 'tracking:state',
   ATTENDANCE_CHANGED: 'attendance:changed',
   ORDER_CREATED: 'order:created',
   ORDER_STATUS_CHANGED: 'order:status_changed',

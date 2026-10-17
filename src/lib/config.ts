@@ -26,6 +26,8 @@ export const config = {
   corsOrigins: parseList(process.env.CORS_ORIGINS),
   /** Legacy `?token=` authentication (off unless ALLOW_QUERY_TOKEN=true). */
   allowQueryToken: process.env.ALLOW_QUERY_TOKEN === 'true',
+  /** Raw GPS points older than this many days are purged daily. Unset = keep everything (default). */
+  locationRetentionDays: /^\d+$/.test(process.env.LOCATION_RETENTION_DAYS || '') ? Number(process.env.LOCATION_RETENTION_DAYS) : null,
   /** Optional shared state for running more than one instance (Socket.IO adapter, rate limits). */
   redisUrl: process.env.REDIS_URL || '',
   /** Secure cookies require HTTPS; disable only for plain-HTTP local/LAN testing. */
@@ -47,6 +49,11 @@ export function validateConfig(env: NodeJS.ProcessEnv = process.env): ConfigVali
     errors.push('DATABASE_URL is missing. Please configure a valid PostgreSQL connection string.');
   } else if (!dbUrl.startsWith('postgresql://') && !dbUrl.startsWith('postgres://')) {
     errors.push('DATABASE_URL is invalid: must start with postgresql:// or postgres://');
+  }
+
+  const retention = env.LOCATION_RETENTION_DAYS;
+  if (retention !== undefined && retention !== '' && (!/^\d+$/.test(retention) || Number(retention) < 7)) {
+    errors.push('LOCATION_RETENTION_DAYS must be a whole number of days, at least 7 (or unset to keep all location history).');
   }
 
   const redisUrl = env.REDIS_URL;

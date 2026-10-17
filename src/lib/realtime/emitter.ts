@@ -47,6 +47,9 @@ function emitToTeam(event: string, salespersonId: string | undefined | null, dat
 export const notifySalespersonLocation = (salespersonId: string, point: unknown) =>
   emitToTeam(SOCKET_EVENTS.LOCATION_UPDATE, salespersonId, { salespersonId, point });
 
+export const notifyTrackingState = (salespersonId: string, state: unknown) =>
+  emitToTeam(SOCKET_EVENTS.TRACKING_STATE, salespersonId, { salespersonId, ...(state as object) });
+
 export const notifyAttendanceChange = (salespersonId: string, attendance: unknown) =>
   emitToTeam(SOCKET_EVENTS.ATTENDANCE_CHANGED, salespersonId, { salespersonId, attendance });
 

@@ -2,7 +2,7 @@
   "name": "salesgrid",
   "version": "2.0.0",
   "private": true,
-  "description": "SalesGrid \u2014 unified field sales, GPS tracking and order management (Next.js)",
+  "description": "SalesGrid — unified field sales, GPS tracking and order management (Next.js)",
   "engines": {
     "node": ">=22"
   },
@@ -31,9 +31,11 @@
     "@capacitor/app": "8.1.2",
     "@capacitor/core": "8.5.2",
     "@capacitor/filesystem": "8.1.4",
+    "@capacitor/local-notifications": "8.3.1",
     "@capacitor/preferences": "8.0.1",
     "@capacitor/share": "8.0.3",
     "@capacitor/splash-screen": "8.0.2",
+    "@capgo/background-geolocation": "8.4.7",
     "@next/env": "^14.2.35",
     "@prisma/client": "^5.22.0",
     "@socket.io/redis-adapter": "8.3.0",

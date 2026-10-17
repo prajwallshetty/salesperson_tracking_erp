@@ -12,6 +12,7 @@ import { parse } from 'url';
 import next from 'next';
 import { validateConfig, config } from './src/lib/config';
 import { initSocketServer, attachRedisAdapter } from './src/lib/realtime/socketServer';
+import { startRetentionJob } from './src/lib/jobs/retention';
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = process.env.HOSTNAME || '0.0.0.0';
@@ -47,6 +48,8 @@ app.prepare().then(async () => {
     console.error('Could not connect to REDIS_URL for the Socket.IO adapter:', (err as Error).message);
     if (!dev) process.exit(1);
   }
+
+  startRetentionJob();
 
   httpServer.listen(port, hostname, () => {
     console.log(`SalesGrid ready on http://${hostname === '0.0.0.0' ? 'localhost' : hostname}:${port} (${dev ? 'development' : 'production'})`);
