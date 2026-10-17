@@ -159,7 +159,7 @@ test.describe.serial('salesperson field day', () => {
   });
 });
 
-test('denied location permission is explained, and the day can still start without GPS', async ({ browser }) => {
+test('denied location permission is explained, the day can still start without GPS, and the console is told', async ({ browser, playwright, baseURL }) => {
   const ctx = await browser.newContext({ ...test.info().project.use, permissions: [] });
   const page = await ctx.newPage();
   // Simulate the browser refusing geolocation.
@@ -181,6 +181,17 @@ test('denied location permission is explained, and the day can still start witho
   await dialog.getByRole('button', { name: 'Start without GPS' }).click();
   await expect(page.getByText(/Day started without a location fix/)).toBeVisible();
   await expect(page.getByText(/Location permission is blocked/)).toBeVisible();
+
+  // The phone reported its own state to the server, so managers see "permission denied", not just silence.
+  const admin = await playwright.request.newContext({ baseURL });
+  await admin.post('/api/auth/login', { data: { company: 'default', identifier: 'admin@erp.com', password: 'Password123!' } });
+  await expect
+    .poll(async () => {
+      const rows = (await (await admin.get('/api/salespersons/live-status')).json()).data as any[];
+      return rows.find((r) => r.employeeCode === 'EMP-002')?.liveState;
+    }, { timeout: 20_000 })
+    .toBe('permission_denied');
+  await admin.dispose();
   await ctx.close();
 });
 

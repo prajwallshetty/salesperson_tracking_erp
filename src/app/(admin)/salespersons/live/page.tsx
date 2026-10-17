@@ -55,8 +55,23 @@ export default function LiveTrackingPage() {
         await apiFetch('/api/salespersons/live-status').then((s) => s.json()),
       ]);
 
-      setTrackers(currentRes.data || []);
-      setLiveStatuses(statusRes.data || []);
+      // A fetch that started before a newer fix arrived over the socket must not roll the position back:
+      // keep whichever position is newer, take everything else (duty, device state) from the server.
+      const newer = (a?: string, b?: string) => Boolean(a) && (!b || new Date(a!).getTime() > new Date(b).getTime());
+      setTrackers((prev) =>
+        (currentRes.data || []).map((t: any) => {
+          const p = prev.find((x) => x.salespersonId === t.salespersonId);
+          return newer(p?.currentLocation?.timestamp, t.currentLocation?.timestamp) ? { ...t, currentLocation: p.currentLocation } : t;
+        })
+      );
+      setLiveStatuses((prev) =>
+        (statusRes.data || []).map((st: any) => {
+          const p = prev.find((x) => x.id === st.id);
+          return newer(p?.lastUpdate, st.lastUpdate)
+            ? { ...st, lastLatitude: p.lastLatitude, lastLongitude: p.lastLongitude, accuracy: p.accuracy, speed: p.speed, batteryLevel: p.batteryLevel, lastUpdate: p.lastUpdate }
+            : st;
+        })
+      );
       setLastRefreshed(new Date());
     } catch (e) {
       console.error(e);

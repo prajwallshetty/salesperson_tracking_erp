@@ -91,7 +91,7 @@ test.describe('admin console', () => {
   test('admin verifies a pending collection from the console', async ({ page, playwright, baseURL }) => {
     // Salesperson records a collection through the API in a separate session.
     const rep = await playwright.request.newContext({ baseURL });
-    await rep.post('/api/auth/login', { data: { identifier: 'rahul@erp.com', password: 'Password123!' } });
+    await rep.post('/api/auth/login', { data: { company: 'default', identifier: 'rahul@erp.com', password: 'Password123!' } });
     const client = (await (await rep.get('/api/clients')).json()).data[0];
     const created = await rep.post('/api/payments', { data: { clientId: client.id, amount: 1234, paymentMethod: 'UPI', transactionReference: 'UTR-E2E-VERIFY' } });
     const receipt = (await created.json()).data.receiptNumber;

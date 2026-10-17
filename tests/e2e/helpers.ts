@@ -1,7 +1,11 @@
 import { expect, type Page, type ConsoleMessage } from '@playwright/test';
 
-export async function login(page: Page, identifier: string, secret = 'Password123!', mode: 'password' | 'code' = 'password', expectSuccess = true) {
+/** Signs in. The E2E database has two companies, so the company code is entered (default: `default`). */
+export async function login(page: Page, identifier: string, secret = 'Password123!', mode: 'password' | 'code' = 'password', expectSuccess = true, company = 'default') {
   await page.goto('/login');
+  const companyField = page.getByLabel('Company code');
+  await companyField.waitFor({ timeout: 8000 }); // shown once the form learns that several companies exist
+  if ((await companyField.inputValue()) === '') await companyField.fill(company);
   if (mode === 'code') await page.getByRole('tab', { name: 'Access code' }).click();
   await page.getByLabel(/employee code/i).fill(identifier);
   await page.getByLabel(mode === 'code' ? 'Personal access code' : 'Password').fill(secret);

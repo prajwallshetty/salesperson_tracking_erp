@@ -3,6 +3,9 @@ import { test, expect } from '@playwright/test';
 /** Quick access login on the production build (desktop project). */
 async function signIn(page: import('@playwright/test').Page, identifier: string, remember: boolean) {
   await page.goto('/login');
+  const company = page.getByLabel('Company code');
+  await company.waitFor({ timeout: 8000 });
+  if ((await company.inputValue()) === '') await company.fill('default');
   await page.getByLabel(/employee code/i).fill(identifier);
   await page.getByLabel('Password').fill('Password123!');
   const box = page.getByLabel('Remember me');
@@ -42,6 +45,7 @@ test.describe('quick access login', () => {
     await expect(page).toHaveURL(/\/login/);
     expect(await sessionCookie(page)).toBeUndefined();
     await expect(page.getByLabel(/employee code/i)).toHaveValue('manager@erp.com');
+    await expect(page.getByLabel('Company code')).toHaveValue('default'); // remembered with the name (not secret)
     await expect(page.getByLabel('Password')).toHaveValue('');
     await expect(page.getByLabel('Remember me')).toBeChecked();
     const stored = await page.evaluate(() => JSON.stringify(window.localStorage));
@@ -50,6 +54,7 @@ test.describe('quick access login', () => {
     // "Not you?" forgets it.
     await page.getByRole('button', { name: 'Not you?' }).click();
     await expect(page.getByLabel(/employee code/i)).toHaveValue('');
+    await expect(page.getByLabel('Company code')).toHaveValue('');
     await expect(page.getByLabel('Remember me')).not.toBeChecked();
   });
 
