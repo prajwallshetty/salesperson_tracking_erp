@@ -1,11 +1,9 @@
-import { prisma, SalespersonStatus, type Prisma } from '@/lib/db';
+import { prisma, type Prisma } from '@/lib/db';
 import { authedRoute, json } from '@/lib/http/handler';
 import { getAuthorizedSalespersonIds } from '@/lib/permissions';
+import { computeLiveState } from '@/features/tracking/liveState';
 
 export const dynamic = 'force-dynamic';
-
-/** A salesperson is "online" only if on duty with an accepted fix in the last 10 minutes. */
-const ONLINE_WINDOW_MS = 10 * 60 * 1000;
 
 export const GET = authedRoute({ managerPermission: 'canViewGps' }, async ({ user }) => {
   const ids = getAuthorizedSalespersonIds(user);
@@ -29,6 +27,7 @@ export const GET = authedRoute({ managerPermission: 'canViewGps' }, async ({ use
     data: salespersons.map((s) => {
       const last = s.locationPoints[0];
       const ageMs = last ? now - new Date(last.timestamp).getTime() : null;
+      const live = computeLiveState({ dutyStatus: s.status, lastFixAt: last?.timestamp, deviceState: s.trackingState, deviceStateAt: s.trackingStateAt });
       return {
         salespersonId: s.id,
         name: s.user.name,
@@ -36,7 +35,10 @@ export const GET = authedRoute({ managerPermission: 'canViewGps' }, async ({ use
         phone: s.user.phone,
         territory: s.territory,
         dutyStatus: s.status,
-        isOnline: Boolean(s.status === SalespersonStatus.ON_DUTY && ageMs !== null && ageMs < ONLINE_WINDOW_MS),
+        // Same classification as /api/salespersons/live-status (live ≤ 5 min since the last real fix).
+        isOnline: live.state === 'live',
+        liveState: live.state,
+        liveStateLabel: live.label,
         locationAgeSeconds: ageMs === null ? null : Math.floor(ageMs / 1000),
         currentLocation: last
           ? {

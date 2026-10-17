@@ -8,6 +8,8 @@ import StatusBadge from '@/components/ui/StatusBadge';
 import { Users, Search, Plus, MapPin, Eye, Phone, Mail, Award, CheckCircle, Clock, X } from 'lucide-react';
 import { useAuth } from '@/components/shared/SessionProvider';
 import { apiFetch, errorMessage } from '@/lib/client/apiFetch';
+import { useRealtimeRefresh } from '@/components/shared/RealtimeProvider';
+import { SOCKET_EVENTS } from '@/lib/domain/constants';
 
 export default function SalespersonsPage() {
   const { token, user, hasPermission } = useAuth();
@@ -111,6 +113,9 @@ export default function SalespersonsPage() {
       sp.phone?.includes(q)
     );
   });
+
+  // Live updates (and a refetch after any reconnect / return to the tab).
+  useRealtimeRefresh(fetchSalespersons, [SOCKET_EVENTS.TEAM_CHANGED, SOCKET_EVENTS.ATTENDANCE_CHANGED]);
 
   return (
     <AdminShell title="Sales Force Management">

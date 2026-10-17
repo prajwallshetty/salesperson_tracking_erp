@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/components/shared/SessionProvider';
 import { apiFetch } from '@/lib/client/apiFetch';
+import { useRealtimeRefresh } from '@/components/shared/RealtimeProvider';
+import { SOCKET_EVENTS } from '@/lib/domain/constants';
 
 export default function ClientsPage() {
   const { token, user, hasPermission } = useAuth();
@@ -110,6 +112,9 @@ export default function ClientsPage() {
       alert(e.message || 'Error creating client');
     }
   };
+
+  // Live updates (and a refetch after any reconnect / return to the tab).
+  useRealtimeRefresh(fetchClients, [SOCKET_EVENTS.CLIENT_CHANGED, SOCKET_EVENTS.CLIENT_ASSIGNED]);
 
   return (
     <AdminShell title="Client Relationship Management">

@@ -1,11 +1,12 @@
 'use client';
 
+import { SOCKET_EVENTS } from '@/lib/domain/constants';
 import React, { Suspense, useEffect, useState } from 'react';
 import AdminShell from '@/components/layout/AdminShell';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/components/shared/SessionProvider';
 import { apiFetch } from '@/lib/client/apiFetch';
-import { useSocket } from '@/components/shared/RealtimeProvider';
+import { useSocket, useRealtimeRefresh } from '@/components/shared/RealtimeProvider';
 import {
   Receipt,
   CheckCircle2,
@@ -97,13 +98,6 @@ function ExpensesContent() {
   useEffect(() => {
     fetchExpenses();
   }, [token, selectedStatus, selectedCategory]);
-
-  // Real-time socket updates for expenses
-  useEffect(() => {
-    if (lastEvent && lastEvent.eventName.startsWith('EXPENSE_')) {
-      fetchExpenses();
-    }
-  }, [lastEvent]);
 
   // Handler: Approve Claim
   const handleApprove = async () => {
@@ -265,6 +259,9 @@ function ExpensesContent() {
         );
     }
   };
+
+  // Live updates (and a refetch after any reconnect / return to the tab).
+  useRealtimeRefresh(fetchExpenses, [SOCKET_EVENTS.EXPENSE_SUBMITTED, SOCKET_EVENTS.EXPENSE_APPROVED, SOCKET_EVENTS.EXPENSE_REJECTED, SOCKET_EVENTS.EXPENSE_REIMBURSED]);
 
   return (
     <AdminShell title="Staff Expense Management">

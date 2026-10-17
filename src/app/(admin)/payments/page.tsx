@@ -1,5 +1,6 @@
 'use client';
 
+import { SOCKET_EVENTS } from '@/lib/domain/constants';
 import React, { useEffect, useRef, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AdminShell from '@/components/layout/AdminShell';
@@ -25,6 +26,7 @@ import {
 import { useAuth } from '@/components/shared/SessionProvider';
 import { apiFetch } from '@/lib/client/apiFetch';
 import { openDocument } from '@/lib/native/documents';
+import { useRealtimeRefresh } from '@/components/shared/RealtimeProvider';
 
 const PAYMENT_STEPS = [
   { id: 'client', label: 'Client' },
@@ -181,6 +183,10 @@ function PaymentsContent() {
     setPaymentNotes('');
     setCreatedReceipt(null);
   };
+
+  // Live updates (and a refetch after any reconnect / return to the tab).
+  useRealtimeRefresh(fetchPayments, [SOCKET_EVENTS.PAYMENT_COLLECTED, SOCKET_EVENTS.PAYMENT_VERIFIED]);
+  useRealtimeRefresh(fetchClients, [SOCKET_EVENTS.CLIENT_CHANGED, SOCKET_EVENTS.CLIENT_ASSIGNED]);
 
   return (
     <AdminShell title="Collections & Receipts">

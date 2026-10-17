@@ -2,18 +2,26 @@
 
 import { calculateHaversineDistanceMeters } from '@/lib/domain/geo';
 import { deviceId, newId, readJson, writeJson } from './storage';
+import { isNativeApp } from '@/lib/native/platform';
+import { APP_RESUME_EVENT } from '@/lib/native/bridge';
+import { NativeLocationError, startNativeTracking, stopNativeTracking, nativePermissions, type NativeFix } from './nativeLocation';
 
 /**
- * Browser GPS tracking for on-duty salespersons.
+ * GPS tracking for on-duty salespersons, with two location sources feeding one pipeline:
  *
- * Supported capability: tracking runs while the SalesGrid tab is open (foreground). Browsers do
- * not allow background geolocation; the optional Screen Wake Lock keeps the device awake during
- * field work. (The legacy Expo app was foreground-only as well — it never registered a
- * background task.) Only fixes reported by the device are recorded; nothing is interpolated.
+ *  - Android app: a native foreground service (persistent notification) keeps fixes coming while the
+ *    app is in the background or the screen is off.
+ *  - Browser: tracking runs while the SalesGrid tab is open (browsers do not allow background
+ *    geolocation); the optional Screen Wake Lock keeps the device awake during field work.
+ *
+ * Both go through the same sampling, buffer and authenticated batch upload. Only fixes reported by
+ * the device are recorded; nothing is interpolated, and mock-location fixes are discarded.
  */
 
 export type PermissionState = 'granted' | 'denied' | 'prompt' | 'unsupported' | 'unknown';
 export type TrackingStatus = 'idle' | 'acquiring' | 'tracking' | 'denied' | 'unavailable' | 'unsupported';
+/** What the phone tells the server about its own capability (see POST /api/location/status). */
+export type DeviceReport = 'TRACKING' | 'PERMISSION_DENIED' | 'BACKGROUND_DENIED' | 'GPS_DISABLED' | 'STOPPED';
 
 export interface Fix {
   latitude: number;
@@ -33,6 +41,10 @@ export interface TrackingState {
   lastError: string | null;
   wakeLock: boolean;
   wakeLockSupported: boolean;
+  /** True when fixes continue in the background (Android foreground service running). */
+  background: boolean;
+  /** Android only: notifications are blocked, so Android may stop the background service silently. */
+  notificationsBlocked: boolean;
 }
 
 interface BufferedPoint {
@@ -96,12 +108,19 @@ export class FieldTracker {
   private battery: { level: number } | null = null;
   private wakeLockSentinel: { release: () => Promise<void> } | null = null;
   private flushing = false;
+  private nativeRunning = false;
+  private pendingReport: { state: DeviceReport; detail?: string } | null = null;
+  private lastReported: DeviceReport | null = null;
   private readonly bufferKey: string;
   private readonly onVisibility = () => {
-    if (document.visibilityState === 'visible' && this.watchId !== null) {
+    if (document.visibilityState === 'visible' && this.isRunning) {
       this.flush();
       if (this.state.wakeLock) this.acquireWakeLock();
     }
+  };
+  // Back from the Android settings screen: try again if tracking was blocked.
+  private readonly onResume = () => {
+    if (this.nativeRunning && (this.state.status === 'denied' || this.state.status === 'unavailable')) void this.startNativeSource();
   };
 
   constructor(
@@ -120,8 +139,10 @@ export class FieldTracker {
       lastError: null,
       wakeLock: false,
       wakeLockSupported: typeof navigator !== 'undefined' && 'wakeLock' in navigator,
+      background: false,
+      notificationsBlocked: false,
     };
-    this.watchPermission();
+    if (!isNativeApp()) this.watchPermission();
   }
 
   subscribe(fn: (s: TrackingState) => void) {
@@ -169,30 +190,81 @@ export class FieldTracker {
   }
 
   get isRunning() {
-    return this.watchId !== null;
+    return this.watchId !== null || this.nativeRunning;
   }
 
   start() {
-    if (this.watchId !== null) return;
-    if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
+    if (this.isRunning) return;
+    const native = isNativeApp();
+    if (!native && (typeof navigator === 'undefined' || !('geolocation' in navigator))) {
       this.set({ status: 'unsupported', lastError: 'This browser does not support location services.' });
       return;
     }
     this.set({ status: 'acquiring', lastError: null });
     this.readBattery();
-    this.restartWatch();
     this.flushTimer = setInterval(() => this.flush(), FLUSH_INTERVAL_MS);
     document.addEventListener('visibilitychange', this.onVisibility);
+    if (native) {
+      this.nativeRunning = true;
+      window.addEventListener(APP_RESUME_EVENT, this.onResume);
+      void this.startNativeSource();
+    } else {
+      this.restartWatch();
+    }
     this.flush();
+  }
+
+  /** Android: starts (or restarts) the foreground service and translates its failures honestly. */
+  private async startNativeSource() {
+    try {
+      await startNativeTracking((fix) => this.onNativeFix(fix), (err) => this.onNativeFailure(err));
+      const perms = await nativePermissions();
+      const blocked = perms.notification === 'denied';
+      this.set({
+        background: true,
+        notificationsBlocked: blocked,
+        permission: 'granted',
+        lastError: blocked ? 'Notifications are blocked: Android may stop background tracking. Allow notifications for SalesGrid in Android settings.' : this.state.lastError,
+      });
+      if (blocked) this.report('BACKGROUND_DENIED', 'Notifications blocked: Android may stop background tracking');
+    } catch (err) {
+      this.onNativeFailure(err instanceof NativeLocationError ? err : new NativeLocationError((err as Error).message, 'other'));
+    }
+  }
+
+  private onNativeFailure(err: NativeLocationError) {
+    if (err.kind === 'permission_denied') {
+      this.set({ status: 'denied', permission: 'denied', background: false, lastError: 'Location permission is blocked. Allow location for SalesGrid in Android settings.' });
+      this.report('PERMISSION_DENIED', 'Location permission refused on the phone');
+    } else if (err.kind === 'location_disabled') {
+      this.set({ status: 'unavailable', background: false, lastError: 'Location services are switched off. Turn on Location in Android quick settings.' });
+      this.report('GPS_DISABLED', 'Phone location services are switched off');
+    } else {
+      this.set({ status: this.state.lastFix ? 'tracking' : 'unavailable', background: false, lastError: `Background tracking problem: ${err.message}` });
+    }
+  }
+
+  private onNativeFix(fix: NativeFix) {
+    if (fix.simulated) {
+      // A mock-location app is feeding positions: they are not where the person is, so they are not recorded.
+      this.set({ lastError: 'Mock location detected. Turn off mock-location apps; these positions are not recorded.' });
+      return;
+    }
+    this.onFix(fix);
   }
 
   private restartWatch() {
     if (this.watchId !== null) navigator.geolocation.clearWatch(this.watchId);
     this.watchId = navigator.geolocation.watchPosition(
-      (pos) => this.onPosition(pos),
+      (pos) => this.onFix(toFix(pos)),
       (err) => {
-        if (err.code === 1) this.set({ status: 'denied', permission: 'denied', lastError: geolocationErrorMessage(1) });
-        else this.set({ status: this.state.lastFix ? 'tracking' : err.code === 2 ? 'unavailable' : 'acquiring', lastError: geolocationErrorMessage(err.code) });
+        if (err.code === 1) {
+          this.set({ status: 'denied', permission: 'denied', lastError: geolocationErrorMessage(1) });
+          this.report('PERMISSION_DENIED', 'Location permission refused in the browser');
+        } else {
+          this.set({ status: this.state.lastFix ? 'tracking' : err.code === 2 ? 'unavailable' : 'acquiring', lastError: geolocationErrorMessage(err.code) });
+          if (err.code === 2 && !this.state.lastFix) this.report('GPS_DISABLED', 'The device could not determine its position');
+        }
       },
       { enableHighAccuracy: true, maximumAge: 10_000, timeout: 60_000 }
     );
@@ -201,12 +273,49 @@ export class FieldTracker {
   async stop(opts: { flush?: boolean } = { flush: true }) {
     if (this.watchId !== null) navigator.geolocation.clearWatch(this.watchId);
     this.watchId = null;
+    if (this.nativeRunning) {
+      this.nativeRunning = false;
+      window.removeEventListener(APP_RESUME_EVENT, this.onResume);
+      await stopNativeTracking(); // ends the foreground service and its notification
+    }
     if (this.flushTimer) clearInterval(this.flushTimer);
     this.flushTimer = null;
     document.removeEventListener('visibilitychange', this.onVisibility);
     await this.setWakeLock(false);
     if (opts.flush) await this.flush();
-    this.set({ status: 'idle' });
+    this.lastRecorded = null;
+    this.set({ status: 'idle', background: false });
+    if (opts.flush) this.report('STOPPED');
+  }
+
+  /**
+   * Tells the server what this phone can do, so the console can tell "permission denied" from "weak
+   * signal". Best effort: queued and retried with the next upload if offline.
+   */
+  private report(state: DeviceReport, detail?: string) {
+    if (this.lastReported === state && !this.pendingReport) return;
+    this.pendingReport = { state, detail };
+    void this.sendReport();
+  }
+
+  private async sendReport() {
+    const r = this.pendingReport;
+    if (!r) return;
+    try {
+      const res = await fetch('/api/location/status', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(r),
+      });
+      // 4xx (not on a salesperson account, invalid) will never succeed: drop it.
+      if (res.ok || (res.status >= 400 && res.status < 500)) {
+        if (res.ok) this.lastReported = r.state;
+        if (this.pendingReport === r) this.pendingReport = null;
+      }
+    } catch {
+      /* offline: stays pending and is retried by flush() */
+    }
   }
 
   private async readBattery() {
@@ -222,9 +331,13 @@ export class FieldTracker {
     }
   }
 
-  private onPosition(pos: GeolocationPosition) {
-    const fix = toFix(pos);
-    this.set({ status: 'tracking', permission: 'granted', lastFix: fix, lastError: null });
+  private onFix(fix: Fix) {
+    this.set({ status: 'tracking', permission: 'granted', lastFix: fix, lastError: this.state.notificationsBlocked ? this.state.lastError : null });
+    // First real fix of a run: the phone is evidently able to track. Browsers can only report while the page is open.
+    if (this.lastReported !== 'TRACKING' && this.lastReported !== 'BACKGROUND_DENIED') {
+      if (isNativeApp() && !this.state.notificationsBlocked) this.report('TRACKING');
+      else if (!isNativeApp()) this.report('BACKGROUND_DENIED', 'Browser: reports only while this page is open');
+    }
 
     // Adaptive sampling (legacy rules): 15 s while moving, 60 s stationary, skip < 8 m jitter.
     const last = this.lastRecorded;
@@ -258,6 +371,7 @@ export class FieldTracker {
   /** Uploads buffered points. Network failures keep them; server rejection drops them. */
   async flush(): Promise<void> {
     if (this.flushing) return;
+    void this.sendReport(); // retry a queued device report even when no points are waiting
     const buf = this.buffer();
     if (!buf.length) return;
     if (this.hasPendingStartDay()) return; // wait until the offline Start Day is synced

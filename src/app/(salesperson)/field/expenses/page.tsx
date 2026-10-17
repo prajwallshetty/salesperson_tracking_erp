@@ -1,5 +1,7 @@
 'use client';
 
+import { SOCKET_EVENTS } from '@/lib/domain/constants';
+import { useRealtimeRefresh } from '@/components/shared/RealtimeProvider';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useField } from '@/features/field/FieldProvider';
 import { newId } from '@/features/field/storage';
@@ -51,6 +53,8 @@ export default function FieldExpenses() {
       setError(errorMessage(err));
     }
   }, [filter]);
+
+  useRealtimeRefresh(load, [SOCKET_EVENTS.EXPENSE_APPROVED, SOCKET_EVENTS.EXPENSE_REJECTED, SOCKET_EVENTS.EXPENSE_REIMBURSED]);
 
   useEffect(() => {
     load();

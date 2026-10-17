@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <application
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
@@ -20,6 +21,10 @@
             </intent-filter>
         </activity>
 
+        <receiver android:name="com.capacitorjs.plugins.localnotifications.LocalNotificationRestoreReceiver" tools:node="remove" />
+        <receiver android:name="com.capgo.capacitor_background_geolocation.GeofenceBroadcastReceiver" tools:node="remove" />
+        <receiver android:name="com.capgo.capacitor_background_geolocation.GeofenceBootReceiver" tools:node="remove" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -29,6 +34,10 @@
         </provider>
     </application>
 
+    <!-- Declared by the plugins we use but not needed here: no boot-time restarts, no exact alarms, no geofencing. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" tools:node="remove" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" tools:node="remove" />
+
     <!-- Permissions: only what existing SalesGrid modules use. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Foreground GPS for Start Day tracking and visit distance checks (navigator.geolocation in the
@@ -36,6 +45,10 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
-    <!-- USE_BIOMETRIC is added by @aparajita/capacitor-biometric-auth. Receipt photos use the system
+    <!-- Background tracking while on duty: a foreground service of type "location" with a persistent
+         notification. The plugin adds FOREGROUND_SERVICE, FOREGROUND_SERVICE_LOCATION, POST_NOTIFICATIONS
+         and WAKE_LOCK. ACCESS_BACKGROUND_LOCATION is deliberately NOT requested: updates continue because
+         the service is started while the app is visible and shows its notification.
+         USE_BIOMETRIC is added by @aparajita/capacitor-biometric-auth. Receipt photos use the system
          camera app through the file chooser, which needs no CAMERA permission. -->
 </manifest>

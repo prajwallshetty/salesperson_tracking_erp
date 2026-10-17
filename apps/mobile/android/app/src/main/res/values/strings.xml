@@ -4,4 +4,5 @@
     <string name="title_activity_main">SalesGrid</string>
     <string name="package_name">com.salesgrid.app</string>
     <string name="custom_url_scheme">com.salesgrid.app</string>
+    <string name="capacitor_background_geolocation_notification_icon">drawable/ic_stat_salesgrid</string>
 </resources>

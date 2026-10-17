@@ -1,5 +1,7 @@
 'use client';
 
+import { SOCKET_EVENTS } from '@/lib/domain/constants';
+import { useRealtimeRefresh } from '@/components/shared/RealtimeProvider';
 import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useField } from '@/features/field/FieldProvider';
@@ -43,6 +45,8 @@ function CollectInner() {
       setError(errorMessage(err));
     }
   }, []);
+
+  useRealtimeRefresh(load, [SOCKET_EVENTS.PAYMENT_VERIFIED]);
 
   useEffect(() => {
     load();

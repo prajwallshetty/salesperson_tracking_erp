@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useCallback, useEffect, useRef, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AdminShell from '@/components/layout/AdminShell';
 import RouteMap, { acceptedSegments } from '@/components/maps/RouteMap';
@@ -20,6 +20,17 @@ import {
 import { useAuth } from '@/components/shared/SessionProvider';
 import { apiFetch } from '@/lib/client/apiFetch';
 import { todayYmd } from '@/lib/client/format';
+import { useRealtimeRefresh, useSocket } from '@/components/shared/RealtimeProvider';
+import { SOCKET_EVENTS } from '@/lib/domain/constants';
+
+const QUALITY: Record<string, { label: string; cls: string; hint: string }> = {
+  complete: { label: 'Complete', cls: 'bg-[#E6F4DD] text-[#2E6819] border-[#B4E39C]', hint: 'Shift ended with a usable GPS record.' },
+  in_progress: { label: 'In progress', cls: 'bg-[#E0F2FE] text-[#075985] border-[#BAE6FD]', hint: 'Shift is still open; the route grows as fixes arrive.' },
+  incomplete: { label: 'Incomplete', cls: 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]', hint: 'The shift was never ended, or fewer than two usable GPS fixes were recorded. Only what the phone reported is drawn.' },
+};
+
+const fmtTime = (iso?: string | null) => (iso ? new Date(iso).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' }) : '—');
+const fmtDuration = (min: number) => (min < 60 ? `${min} min` : `${Math.floor(min / 60)} h ${min % 60} min`);
 
 function RouteHistoryContent() {
   const searchParams = useSearchParams();
@@ -31,6 +42,8 @@ function RouteHistoryContent() {
   const [selectedDate, setSelectedDate] = useState(searchParams.get('date') || todayYmd());
   const [routeData, setRouteData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedSessionId, setSelectedSessionId] = useState('');
+  const { socket } = useSocket();
 
   // Load salespersons list
   useEffect(() => {
@@ -46,18 +59,43 @@ function RouteHistoryContent() {
       });
   }, [token]);
 
-  // Load route history for selected salesperson & date
+  // Load route history for selected salesperson & date (& optionally one shift). `silent` = live refresh, no spinner.
+  const loadRoute = useCallback(
+    async (silent = false) => {
+      if (!token || !selectedSpId) return;
+      if (!silent) setLoading(true);
+      try {
+        const q = selectedSessionId ? `&sessionId=${selectedSessionId}` : '';
+        const res = await apiFetch(`/api/location/history?salespersonId=${selectedSpId}&date=${selectedDate}${q}`);
+        setRouteData(await res.json());
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [token, selectedSpId, selectedDate, selectedSessionId]
+  );
   useEffect(() => {
-    if (!token || !selectedSpId) return;
-    setLoading(true);
-    apiFetch(`/api/location/history?salespersonId=${selectedSpId}&date=${selectedDate}`)
-      .then((r) => r.json())
-      .then((json) => {
-        setRouteData(json);
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [token, selectedSpId, selectedDate]);
+    setSelectedSessionId('');
+  }, [selectedSpId, selectedDate]);
+  useEffect(() => {
+    loadRoute();
+  }, [loadRoute]);
+
+  // New fixes for the person being viewed (today only) refresh the route; at most one refetch per 5 s.
+  const lastLive = useRef(0);
+  useEffect(() => {
+    if (!socket || selectedDate !== todayYmd()) return;
+    const onLocation = (env: any) => {
+      if (env?.data?.salespersonId !== selectedSpId || Date.now() - lastLive.current < 5000) return;
+      lastLive.current = Date.now();
+      loadRoute(true);
+    };
+    socket.on(SOCKET_EVENTS.LOCATION_UPDATE, onLocation);
+    return () => void socket.off(SOCKET_EVENTS.LOCATION_UPDATE, onLocation);
+  }, [socket, selectedSpId, selectedDate, loadRoute]);
+  useRealtimeRefresh(() => loadRoute(true), [SOCKET_EVENTS.ATTENDANCE_CHANGED, SOCKET_EVENTS.TRACKING_STATE]);
 
   // API returns segments split at tracking gaps; flagged (implausible) points are not drawn.
   const segments = acceptedSegments(routeData?.segments);
@@ -111,6 +149,67 @@ function RouteHistoryContent() {
             )}
           </div>
         </div>
+
+        {/* Shifts recorded that day: honest labels, no guessing */}
+        {routeData?.sessions && (
+          <div className="bg-white border border-[#CBD2D7] rounded-xl overflow-hidden">
+            <div className="px-5 py-3 border-b border-[#CBD2D7] bg-[#F3F5F6]/60 flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-sm font-bold text-[#0B1320]">Tracked shifts</h3>
+              <div className="flex items-center gap-3 text-[11px] text-[#586570]">
+                {routeData.liveState && (
+                  <span className="font-semibold" data-live-state={routeData.liveState.state}>{routeData.liveState.label}</span>
+                )}
+                {routeData.lastKnown && (
+                  <span>
+                    Last known position {routeData.lastKnown.latitude.toFixed(4)}, {routeData.lastKnown.longitude.toFixed(4)} at {fmtTime(routeData.lastKnown.timestamp)}
+                    {routeData.lastKnown.accuracy != null ? ` (±${Math.round(routeData.lastKnown.accuracy)} m)` : ''}
+                  </span>
+                )}
+                {routeData.sessions.length > 1 && (
+                  <select aria-label="Show one shift" value={selectedSessionId} onChange={(e) => setSelectedSessionId(e.target.value)} className="px-2 py-1 bg-white border border-[#CBD2D7] rounded-md text-[11px] font-semibold text-[#0B1320]">
+                    <option value="">All shifts</option>
+                    {routeData.sessions.map((s: any, i: number) => (
+                      <option key={s.id} value={s.id}>Shift {i + 1} · {fmtTime(s.startedAt)}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            </div>
+            {routeData.sessions.length === 0 ? (
+              <p className="p-5 text-xs text-[#80909D]">No tracking session was recorded for this day.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="text-[#586570] bg-[#F3F5F6] border-b border-[#CBD2D7]">
+                      <th className="py-2 px-4">Started</th>
+                      <th className="py-2 px-4">Ended</th>
+                      <th className="py-2 px-4">Duration</th>
+                      <th className="py-2 px-4">GPS points</th>
+                      <th className="py-2 px-4">Distance</th>
+                      <th className="py-2 px-4">Record</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#E2E7EC]">
+                    {routeData.sessions.map((s: any) => (
+                      <tr key={s.id}>
+                        <td className="py-2 px-4">{fmtTime(s.startedAt)}</td>
+                        <td className="py-2 px-4">{s.endedAt ? fmtTime(s.endedAt) : s.quality === 'in_progress' ? 'Still open' : 'Never ended'}</td>
+                        <td className="py-2 px-4">{fmtDuration(s.durationMinutes)}</td>
+                        <td className="py-2 px-4">{s.acceptedPointsCount}{s.flaggedPointsCount ? <span className="text-[#92400E]"> (+{s.flaggedPointsCount} rejected)</span> : null}</td>
+                        <td className="py-2 px-4">{s.distanceKm.toFixed(2)} km</td>
+                        <td className="py-2 px-4">
+                          <span title={QUALITY[s.quality]?.hint} className={`inline-block px-2 py-0.5 rounded-full border text-[11px] font-semibold ${QUALITY[s.quality]?.cls}`}>{QUALITY[s.quality]?.label ?? s.quality}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <p className="px-5 py-2 text-[11px] text-[#80909D] border-t border-[#E2E7EC]">{routeData.disclaimer}</p>
+          </div>
+        )}
 
         {/* Map & Timeline Grid */}
         <div className="flex flex-col lg:flex-row gap-6 lg:h-[calc(100vh-230px)]">

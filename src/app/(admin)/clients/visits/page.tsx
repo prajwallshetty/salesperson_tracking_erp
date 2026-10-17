@@ -6,6 +6,7 @@ import StatusBadge from '@/components/ui/StatusBadge';
 import { CalendarCheck, MapPin, AlertTriangle, CheckCircle, Search, User } from 'lucide-react';
 import { useAuth } from '@/components/shared/SessionProvider';
 import { apiFetch } from '@/lib/client/apiFetch';
+import { useRealtimeRefresh } from '@/components/shared/RealtimeProvider';
 
 export default function ClientVisitsPage() {
   const { token } = useAuth();
@@ -34,6 +35,9 @@ export default function ClientVisitsPage() {
   useEffect(() => {
     fetchVisits();
   }, [token, outcomeFilter]);
+
+  // Live updates (and a refetch after any reconnect / return to the tab).
+  useRealtimeRefresh(fetchVisits, []);
 
   return (
     <AdminShell title="Client Field Visits">

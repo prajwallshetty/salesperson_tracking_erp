@@ -8,6 +8,8 @@ import { useField } from '@/features/field/FieldProvider';
 import { Card, Notice, PrimaryButton, SecondaryButton, Sheet } from '@/components/sales/mobile';
 import TrackingStatus from '@/components/sales/TrackingStatus';
 import { formatTime, inr } from '@/lib/client/format';
+import { TRACKING_DISCLOSURE, acceptTrackingConsent, needsTrackingConsent } from '@/features/field/trackingConsent';
+import { isNativeApp } from '@/lib/native/platform';
 
 function greeting() {
   const h = Number(new Intl.DateTimeFormat('en-IN', { hour: 'numeric', hourCycle: 'h23', timeZone: process.env.NEXT_PUBLIC_DEFAULT_TIMEZONE || 'Asia/Kolkata' }).format(new Date()));
@@ -22,7 +24,19 @@ export default function FieldHome() {
   const [askNoLocation, setAskNoLocation] = useState<string | null>(null);
   const [summary, setSummary] = useState<any | null>(null);
   const [confirmEnd, setConfirmEnd] = useState(false);
+  const [showDisclosure, setShowDisclosure] = useState(false);
   const onDuty = dutyStatus === 'ON_DUTY';
+
+  // Android app, first time: explain background location before anything is requested or recorded.
+  const requestStart = async () => {
+    if (user && (await needsTrackingConsent(user.id))) return setShowDisclosure(true);
+    void doStart();
+  };
+  const acceptAndStart = async () => {
+    if (user) await acceptTrackingConsent(user.id);
+    setShowDisclosure(false);
+    void doStart();
+  };
 
   const doStart = async (allowWithoutLocation = false) => {
     setBusy(true);
@@ -106,12 +120,18 @@ export default function FieldHome() {
               {busy ? 'Ending day…' : 'End day & close shift'}
             </SecondaryButton>
           ) : (
-            <PrimaryButton onClick={() => doStart()} loading={busy} disabled={!dashboard}>
+            <PrimaryButton onClick={requestStart} loading={busy} disabled={!dashboard}>
               Start day (enables GPS tracking)
             </PrimaryButton>
           )}
         </div>
-        {!onDuty && <p className="text-[11px] text-[#80909D] mt-2">Your location is recorded only while you are on duty and SalesGrid is open. It stops the moment you end your day.</p>}
+        {!onDuty && (
+          <p className="text-[11px] text-[#80909D] mt-2">
+            {isNativeApp()
+              ? 'Your location is recorded only while you are on duty, including when the app is in the background. A notification shows while it is on, and it stops the moment you end your day.'
+              : 'Your location is recorded only while you are on duty and SalesGrid is open. It stops the moment you end your day.'}
+          </p>
+        )}
       </Card>
 
       {message && <Notice tone={message.tone}>{message.text}</Notice>}
@@ -176,6 +196,25 @@ export default function FieldHome() {
           </Link>
         ))}
       </div>
+
+      <Sheet
+        open={showDisclosure}
+        title="Location tracking while you work"
+        onClose={() => setShowDisclosure(false)}
+        footer={
+          <div className="grid grid-cols-2 gap-2">
+            <SecondaryButton onClick={() => setShowDisclosure(false)}>Not now</SecondaryButton>
+            <PrimaryButton onClick={acceptAndStart}>I understand — continue</PrimaryButton>
+          </div>
+        }
+      >
+        <ul className="space-y-2 text-sm text-[#0B1320] list-disc pl-5">
+          {TRACKING_DISCLOSURE.map((t) => (
+            <li key={t}>{t}</li>
+          ))}
+        </ul>
+        <p className="text-xs text-[#586570] mt-3">Android will now ask for permission to use your location (and to show the tracking notification). You can change this later in Android settings.</p>
+      </Sheet>
 
       <Sheet
         open={askNoLocation !== null}

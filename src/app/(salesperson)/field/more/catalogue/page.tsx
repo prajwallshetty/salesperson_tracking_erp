@@ -1,5 +1,7 @@
 'use client';
 
+import { SOCKET_EVENTS } from '@/lib/domain/constants';
+import { useRealtimeRefresh } from '@/components/shared/RealtimeProvider';
 import React, { useEffect, useState } from 'react';
 import { Search } from 'lucide-react';
 import BackHeader from '@/components/sales/BackHeader';
@@ -11,6 +13,9 @@ export default function Catalogue() {
   const [products, setProducts] = useState<any[] | null>(null);
   const [search, setSearch] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  // New or changed products appear without reopening the catalogue.
+  useRealtimeRefresh(() => setRefreshKey((n) => n + 1), [SOCKET_EVENTS.PRODUCT_CHANGED]);
   useEffect(() => {
     const id = setTimeout(() => {
       apiJson<{ data: any[] }>(`/api/products?limit=200&search=${encodeURIComponent(search)}`)
@@ -21,7 +26,7 @@ export default function Catalogue() {
         });
     }, 250);
     return () => clearTimeout(id);
-  }, [search]);
+  }, [search, refreshKey]);
   return (
     <div className="space-y-3">
       <BackHeader title="Product catalogue" />

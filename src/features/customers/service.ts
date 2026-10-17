@@ -4,7 +4,7 @@ import { badRequest, forbidden, notFound } from '@/lib/http/errors';
 import { assertSalespersonAccess } from '@/lib/services/access';
 import { createNotification } from '@/lib/services/notifications';
 import { logAuditEvent, type AuditActor } from '@/lib/services/audit';
-import { notifyClientAssigned } from '@/lib/realtime/emitter';
+import { notifyClientAssigned, notifyClientChanged } from '@/lib/realtime/emitter';
 import type { AuthenticatedUser } from '@/lib/permissions';
 
 export async function createClient(user: AuthenticatedUser, rawInput: unknown, actor: AuditActor) {
@@ -56,6 +56,7 @@ export async function createClient(user: AuthenticatedUser, rawInput: unknown, a
   });
 
   await logAuditEvent({ actor, action: 'CREATE_CLIENT', module: 'CLIENT', recordId: client.id, newValue: client });
+  notifyClientChanged({ id: client.id, action: 'created' });
   return client;
 }
 
@@ -110,7 +111,13 @@ export async function assignClient(
       type: 'ASSIGNMENT',
     });
   }
-  notifyClientAssigned(primarySalespersonId, { clientId, clientName: client.name, type: 'PRIMARY' });
+  // Everyone whose list changes hears about it: the new primary and backup, and the previous holders
+  // (whose phones must stop showing a client they no longer have).
+  const previous = client.assignments.map((a) => a.salespersonId);
+  const affected = new Map<string, string>(previous.map((id) => [id, 'REMOVED']));
+  if (backupSalespersonId) affected.set(backupSalespersonId, 'BACKUP');
+  affected.set(primarySalespersonId, 'PRIMARY');
+  for (const [salespersonId, type] of affected) notifyClientAssigned(salespersonId, { clientId, clientName: client.name, type });
   await logAuditEvent({
     actor,
     action: 'REASSIGN_CLIENT',

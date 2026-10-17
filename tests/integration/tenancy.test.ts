@@ -168,10 +168,14 @@ describe('data isolation between companies', () => {
     expect((await api(`/api/orders/${bOrder.id}/status`, { method: 'PUT', token: A.admin.token, body: { status: 'CANCELLED' } })).status).toBe(404);
     expect((await api(`/api/products/${bProductId}`, { token: A.admin.token })).status).toBe(404);
     expect((await api(`/api/clients/${bClient.id}/assign`, { token: A.admin.token, body: { primarySalespersonId: A.rahul.user.salespersonId } })).status).toBe(404);
-    // Creating records that reference the other company
-    expect((await api('/api/orders', { token: A.rahul.token, body: { clientId: bClient.id, items: [{ productId: bProductId, quantity: 1 }] } })).status).toBeGreaterThanOrEqual(400);
-    expect((await api('/api/orders', { token: A.admin.token, body: { clientId: aClient.id, salespersonId: B.gita.user.salespersonId, items: [{ productId: bProductId, quantity: 1 }] } })).status).toBeGreaterThanOrEqual(400);
-    expect((await api('/api/payments', { token: A.rahul.token, body: { clientId: bClient.id, amount: 10, paymentMethod: 'CASH' } })).status).toBeGreaterThanOrEqual(400);
+    // Creating records that reference the other company: each foreign reference is refused on its own.
+    const aProductId = ((await api('/api/products', { token: A.rahul.token })).json.data as any[])[0].id;
+    const oneItem = (productId: string) => [{ productId, quantity: 1 }];
+    expect((await api('/api/orders', { token: A.rahul.token, body: { clientId: bClient.id, items: oneItem(aProductId) } })).status).toBe(404); // foreign client
+    expect((await api('/api/orders', { token: A.rahul.token, body: { clientId: aClient.id, items: oneItem(bProductId) } })).status).toBe(400); // foreign product: "invalid items"
+    expect((await api('/api/orders', { token: A.admin.token, body: { clientId: aClient.id, salespersonId: B.gita.user.salespersonId, items: oneItem(aProductId) } })).status).toBe(404); // foreign salesperson
+    expect((await api('/api/payments', { token: A.rahul.token, body: { clientId: bClient.id, amount: 10, paymentMethod: 'CASH' } })).status).toBe(404);
+    expect((await api('/api/payments', { token: A.admin.token, body: { clientId: aClient.id, salespersonId: B.gita.user.salespersonId, amount: 10, paymentMethod: 'CASH' } })).status).toBe(404);
     // Nothing changed
     const still = await db.order.findUniqueOrThrow({ where: { id: bOrder.id } });
     expect(still.status).not.toBe('CANCELLED');
@@ -244,14 +248,13 @@ describe('data isolation between companies', () => {
     const r = await api(`/api/clients?tenantId=${GLOBEX_ID}`, {
       token: A.admin.token,
       headers: { 'X-Tenant-Id': GLOBEX_ID },
-      body: { name, contactPerson: 'P', phone: '9111111111', address: 'a', city: 'c', state: 's', pincode: '560001', latitude: 12.9, longitude: 77.6, tenantId: GLOBEX_ID, tenant: { connect: { id: GLOBEX_ID } } },
+      body: { name, contactPerson: 'Probe Person', phone: `91${Date.now().toString().slice(-8)}`, address: '12 Test Road', city: 'Pune', state: 'Maharashtra', pincode: '411001', latitude: 12.9, longitude: 77.6, tenantId: GLOBEX_ID, tenant: { connect: { id: GLOBEX_ID } } },
     });
-    expect([201, 400]).toContain(r.status);
-    if (r.status === 201) {
-      const row = await db.client.findFirstOrThrow({ where: { name } });
-      expect(row.tenantId).not.toBe(GLOBEX_ID);
-      expect(((await api('/api/clients', { token: B.admin.token })).json.data as any[]).some((c) => c.name === name)).toBe(false);
-    }
+    expect({ status: r.status, error: r.json.error }).toMatchObject({ status: 201 }); // the request itself is valid; the extra fields are ignored
+    const row = await db.client.findFirstOrThrow({ where: { name } });
+    expect(row.tenantId).not.toBe(GLOBEX_ID);
+    expect(((await api('/api/clients', { token: B.admin.token })).json.data as any[]).some((c) => c.name === name)).toBe(false);
+    expect(((await api('/api/clients', { token: A.admin.token })).json.data as any[]).some((c) => c.name === name)).toBe(true);
   });
 
   it('files, idempotency keys and live events never cross companies', async () => {

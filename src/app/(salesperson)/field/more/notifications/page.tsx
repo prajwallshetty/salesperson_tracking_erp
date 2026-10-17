@@ -1,5 +1,6 @@
 'use client';
 
+import { useRealtimeRefresh } from '@/components/shared/RealtimeProvider';
 import React, { useCallback, useEffect, useState } from 'react';
 import BackHeader from '@/components/sales/BackHeader';
 import { Card, EmptyState, Notice, SkeletonList } from '@/components/sales/mobile';
@@ -17,6 +18,7 @@ export default function Notifications() {
       .catch((e) => setError(errorMessage(e)));
   }, []);
   useEffect(load, [load, lastEvent]);
+  useRealtimeRefresh(load); // also after a reconnect: notifications sent while offline
 
   const markAll = async () => {
     await apiFetch('/api/notifications/read-all', { method: 'PUT' });

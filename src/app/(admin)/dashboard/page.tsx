@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/components/shared/SessionProvider';
 import { apiFetch } from '@/lib/client/apiFetch';
+import { useRealtimeRefresh } from '@/components/shared/RealtimeProvider';
+import { SOCKET_EVENTS } from '@/lib/domain/constants';
 import {
   ResponsiveContainer,
   BarChart,
@@ -58,6 +60,9 @@ export default function DashboardPage() {
 
   const kpis = data?.kpis || {};
   const charts = data?.charts || {};
+
+  // Live updates (and a refetch after any reconnect / return to the tab).
+  useRealtimeRefresh(fetchDashboard, [SOCKET_EVENTS.ORDER_CREATED, SOCKET_EVENTS.ORDER_STATUS_CHANGED, SOCKET_EVENTS.PAYMENT_COLLECTED, SOCKET_EVENTS.PAYMENT_VERIFIED, SOCKET_EVENTS.ATTENDANCE_CHANGED, SOCKET_EVENTS.EXPENSE_SUBMITTED, SOCKET_EVENTS.CLIENT_CHANGED, SOCKET_EVENTS.CLIENT_ASSIGNED, SOCKET_EVENTS.TEAM_CHANGED]);
 
   return (
     <AdminShell title="Dashboard">

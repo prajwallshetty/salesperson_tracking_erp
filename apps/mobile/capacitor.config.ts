@@ -38,6 +38,10 @@ const config: CapacitorConfig = {
       backgroundColor: '#081224',
       showSpinner: false,
     },
+    LocalNotifications: {
+      smallIcon: 'ic_stat_salesgrid',
+      iconColor: '#081224',
+    },
     SystemBars: {
       insetsHandling: 'css',
       style: 'DARK',

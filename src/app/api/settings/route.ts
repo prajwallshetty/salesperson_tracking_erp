@@ -3,6 +3,7 @@ import { prisma, Role } from '@/lib/db';
 import { authedRoute, json } from '@/lib/http/handler';
 import { readJson } from '@/lib/http/request';
 import { logAuditEvent, actorFrom } from '@/lib/services/audit';
+import { notifySettingsChanged } from '@/lib/realtime/emitter';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,5 +28,6 @@ export const PUT = authedRoute({ roles: [Role.SUPER_ADMIN] }, async (ctx) => {
     )
   );
   await logAuditEvent({ actor: actorFrom(ctx), action: 'UPDATE_SYSTEM_SETTINGS', module: 'SETTINGS', newValue: parsed });
+  notifySettingsChanged(parsed.map((s) => s.key));
   return json({ message: 'Settings updated successfully' });
 });
