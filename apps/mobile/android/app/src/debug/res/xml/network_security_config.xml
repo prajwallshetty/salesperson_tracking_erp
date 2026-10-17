@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- DEBUG BUILDS ONLY: allows http:// so a development build can load `npm run dev` on a LAN IP
+     (SALESGRID_ALLOW_HTTP=true). Release builds keep Android's default: HTTPS only. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

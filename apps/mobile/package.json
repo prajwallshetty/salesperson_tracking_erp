@@ -1,0 +1,32 @@
+{
+  "name": "salesgrid-android",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Capacitor Android shell for SalesGrid. Loads the deployed SalesGrid web app over HTTPS; all business logic stays on the server.",
+  "scripts": {
+    "check": "node scripts/check-config.mjs",
+    "sync": "node scripts/check-config.mjs && cap sync android",
+    "assets": "capacitor-assets generate --android --iconBackgroundColor '#081224' --iconBackgroundColorDark '#081224' --splashBackgroundColor '#081224' --splashBackgroundColorDark '#081224'",
+    "open": "cap open android",
+    "build:debug": "npm run sync && cd android && ./gradlew assembleDebug",
+    "build:release": "npm run sync && cd android && ./gradlew assembleRelease",
+    "bundle:release": "npm run sync && cd android && ./gradlew bundleRelease"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@aparajita/capacitor-biometric-auth": "10.0.0",
+    "@capacitor/android": "8.5.2",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/core": "8.5.2",
+    "@capacitor/filesystem": "8.1.4",
+    "@capacitor/preferences": "8.0.1",
+    "@capacitor/share": "8.0.3",
+    "@capacitor/splash-screen": "8.0.2"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "3.0.5",
+    "@capacitor/cli": "8.5.2"
+  }
+}

@@ -14,6 +14,7 @@ It replaces the former `admin/` (Next.js), `app/` (Expo / React Native), `api/` 
 | Manager | `/dashboard` … | Same console, limited to their team and to the permissions an admin grants |
 | Salesperson | `/field` | Mobile-first app: start/end day, GPS, visits, orders, collections, expenses, offline sync |
 | API clients | `/api/*` | REST API (Bearer token or session cookie). OpenAPI at `/api/docs` |
+| Android app | `apps/mobile` | Capacitor shell that loads the deployed app — web changes need no new APK. See [`docs/MOBILE_ANDROID.md`](docs/MOBILE_ANDROID.md) |
 
 ## Stack
 
@@ -49,7 +50,8 @@ npm run dev                     # http://localhost:3000 (Next.js + Socket.IO)
 
 Seeded demo accounts (password `Password123!`): `admin@erp.com`, `manager@erp.com`,
 `rahul@erp.com` (or `EMP-001` / access code `RAHUL12345`), `ahmed@erp.com`, `vishal@erp.com`.
-Set `SHOW_DEMO_LOGINS=true` to show quick-fill buttons on the login page.
+Set `DEV_QUICK_LOGIN=true` for one-tap sign-in buttons on the login page (development only — ignored in
+production, and no passwords are sent to the browser).
 
 > `npm run dev:next` runs plain `next dev` without the custom server: everything works except realtime
 > push (pages fall back to polling).
@@ -107,3 +109,4 @@ set `REDIS_URL` and share `UPLOAD_DIR` (see DEPLOYMENT.md).
 - [`docs/VERIFICATION_REPORT.md`](docs/VERIFICATION_REPORT.md) — feature-by-feature test evidence
 - [`docs/DEVICE_TESTING.md`](docs/DEVICE_TESTING.md) — checks that need a real phone and a real road
 - [`docs/api_reference.md`](docs/api_reference.md) — endpoint reference (also `/api/docs`)
+- [`docs/MOBILE_ANDROID.md`](docs/MOBILE_ANDROID.md) — Android app: build, signing, updates, device test checklist

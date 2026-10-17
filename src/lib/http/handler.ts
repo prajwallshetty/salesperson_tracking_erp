@@ -13,6 +13,8 @@ export interface RequestContext<P = Record<string, string>> {
   ip: string;
   userAgent: string;
   tokenIat?: number;
+  /** The session's "Remember me" choice (see signSessionToken). */
+  tokenRemember?: boolean;
 }
 
 export interface AuthedContext<P = Record<string, string>> extends RequestContext<P> {
@@ -103,7 +105,7 @@ export function authedRoute<P = Record<string, string>>(
     const limited = await applyRateLimit(opts.rateLimit ?? API_LIMIT, base.ip);
     if (limited) return limited;
     try {
-      const { user, tokenIat } = await authenticateRequest(req);
+      const { user, tokenIat, tokenRemember } = await authenticateRequest(req);
       if (!user) {
         return NextResponse.json({ error: 'Invalid or expired authentication token' }, { status: 401 });
       }
@@ -116,7 +118,7 @@ export function authedRoute<P = Record<string, string>>(
           { status: 403 }
         );
       }
-      return await handler({ ...base, user, tokenIat });
+      return await handler({ ...base, user, tokenIat, tokenRemember });
     } catch (err) {
       return errorResponse(err, req);
     }

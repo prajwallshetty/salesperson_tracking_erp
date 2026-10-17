@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
+import { pushOverlay } from '@/lib/client/overlayStack';
 
 /** Bottom sheet dialog (full-height on phones, centred card on larger screens). */
 export function Sheet({ open, title, onClose, children, footer }: { open: boolean; title: string; onClose: () => void; children: React.ReactNode; footer?: React.ReactNode }) {
@@ -13,7 +14,9 @@ export function Sheet({ open, title, onClose, children, footer }: { open: boolea
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     document.addEventListener('keydown', onKey);
     document.body.style.overflow = 'hidden';
+    const popOverlay = pushOverlay(onClose); // Android back button closes the sheet
     return () => {
+      popOverlay();
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = '';
       prev?.focus();

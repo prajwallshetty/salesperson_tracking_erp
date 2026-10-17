@@ -9,6 +9,7 @@ import { apiJson, errorMessage } from '@/lib/client/apiFetch';
 import { Card, Chip, EmptyState, Field, Notice, PrimaryButton, Sheet, SkeletonList, StatusPill, inputClass } from '@/components/sales/mobile';
 import FileAttach from '@/components/sales/FileAttach';
 import { formatDateTime, humanize, inr } from '@/lib/client/format';
+import DocLink from '@/components/shared/DocLink';
 
 const METHODS = ['UPI', 'CASH', 'BANK_TRANSFER', 'CHEQUE'] as const;
 
@@ -120,9 +121,9 @@ function CollectInner() {
                   {p.transactionReference ? ` · Ref ${p.transactionReference}` : ''}
                 </p>
                 <div className="flex justify-between mt-2 pt-2 border-t border-[#E2E7EC] text-xs items-center">
-                  <a href={`/api/payments/${p.id}/receipt-pdf`} target="_blank" rel="noopener noreferrer" className="text-[#259DC3] font-semibold">
+                  <DocLink href={`/api/payments/${p.id}/receipt-pdf`} filename={`receipt-${p.receiptNumber || p.id}.pdf`} className="text-[#259DC3] font-semibold">
                     Receipt PDF
-                  </a>
+                  </DocLink>
                   <span className="font-bold text-sm">{inr(p.amount, 2)}</span>
                 </div>
               </Card>
@@ -195,9 +196,9 @@ function CollectInner() {
               </div>
             ))}
             <div className="pt-3">
-              <a href={`/api/payments/${receipt.payment.id}/receipt-pdf`} target="_blank" rel="noopener noreferrer" className="text-[#259DC3] font-semibold">
+              <DocLink href={`/api/payments/${receipt.payment.id}/receipt-pdf`} filename="receipt.pdf" className="text-[#259DC3] font-semibold">
                 Open PDF receipt
-              </a>
+              </DocLink>
             </div>
           </dl>
         ) : null}

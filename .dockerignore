@@ -11,3 +11,5 @@ uploads
 .env.*
 !.env.example
 *.log
+apps
+.github

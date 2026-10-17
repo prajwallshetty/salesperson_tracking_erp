@@ -5,6 +5,7 @@ import BackHeader from '@/components/sales/BackHeader';
 import { Card, Notice, PrimaryButton, SecondaryButton, Sheet } from '@/components/sales/mobile';
 import { useSession } from '@/components/shared/SessionProvider';
 import { useField, clearFieldData } from '@/features/field/FieldProvider';
+import BiometricSetting from '@/components/native/BiometricSetting';
 
 export default function Profile() {
   const { user, logout, logoutEverywhere } = useSession();
@@ -47,6 +48,7 @@ export default function Profile() {
           <li>Locations are used for route distance, visit verification and territory operations.</li>
         </ul>
       </Card>
+      {user && <BiometricSetting userId={user.id} />}
       <SecondaryButton className="w-full text-[#991B1B]" onClick={() => setConfirm(true)}>Sign out</SecondaryButton>
 
       <Sheet

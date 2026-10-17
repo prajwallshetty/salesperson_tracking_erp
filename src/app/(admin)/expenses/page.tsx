@@ -25,6 +25,8 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { EXPENSE_CATEGORIES, EXPENSE_STATUSES } from '@/lib/domain';
+import DocLink from '@/components/shared/DocLink';
+import { saveTextFile } from '@/lib/native/documents';
 
 function ExpensesContent() {
   const { token, user } = useAuth();
@@ -218,14 +220,9 @@ function ExpensesContent() {
         `"${e.receiptUrl || ''}"`,
       ].join(',')
     );
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers, ...rows].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `staff_expenses_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    saveTextFile([headers, ...rows].join('\n'), `staff_expenses_${new Date().toISOString().slice(0, 10)}.csv`).catch((e) =>
+      alert((e as Error).message)
+    );
   };
 
   // Helper status color badges
@@ -581,14 +578,9 @@ function ExpensesContent() {
                       (e.target as HTMLElement).style.display = 'none';
                     }}
                   />
-                  <a
-                    href={inspectExpense.receiptUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-block mt-2 text-xs font-semibold text-[#081224] underline"
-                  >
+                  <DocLink href={inspectExpense.receiptUrl} className="inline-block mt-2 text-xs font-semibold text-[#081224] underline">
                     Open Full Receipt File
-                  </a>
+                  </DocLink>
                 </div>
               ) : (
                 <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-xs text-[#586570] text-center">

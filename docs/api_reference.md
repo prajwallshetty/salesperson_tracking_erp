@@ -17,7 +17,11 @@ performance, `search` on `/api/expenses`, `assignedAt` on client list rows, `dis
 `isException` on route-history visit events, `minutesSinceUpdate` on live status.
 Phase 2 (additive): `POST /api/auth/logout-all`, `POST /api/auth/sessions/revoke`,
 `GET /api/auth/session-ended`, `endSessions` + `sessionsEnded` on `POST /api/access-codes/revoke`,
-`redis` on `/api/health`. Behaviour changes: `GET /api/files/<name>` is now per-record (404 for users
+`redis` on `/api/health`.
+Quick access (additive): `remember` (boolean) on `POST /api/auth/login` and `/api/auth/access-code-login`
+— `false` gives a 12-hour token in a session cookie, omitted/`true` the legacy 7-day session; the response
+adds `remember`. `GET/POST /api/auth/dev-login` (development only, 404 in production) and
+`GET /api/app/config` (Android update settings). Behaviour changes: `GET /api/files/<name>` is now per-record (404 for users
 who cannot see the referencing record), and `?token=` is off by default.
 
 ---

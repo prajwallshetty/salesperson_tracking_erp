@@ -14,9 +14,12 @@ interface LoginUserRow {
   salespersonProfile?: { id: string; employeeCode: string; territory: string; status: string } | null;
 }
 
-/** Legacy login response body + the httpOnly session cookie used by the browser UI. */
-export function loginResponse(user: LoginUserRow): NextResponse {
-  const token = signSessionToken(user.id, user.role, user.tokenVersion ?? 0);
+/**
+ * Legacy login response body + the httpOnly session cookie used by the browser UI.
+ * `remember` defaults to true: API clients that do not send it keep the legacy 7-day session.
+ */
+export function loginResponse(user: LoginUserRow, { remember = true }: { remember?: boolean } = {}): NextResponse {
+  const token = signSessionToken(user.id, user.role, user.tokenVersion ?? 0, remember);
   const res = NextResponse.json({
     token,
     user: {
@@ -31,9 +34,10 @@ export function loginResponse(user: LoginUserRow): NextResponse {
       territory: user.salespersonProfile?.territory,
       dutyStatus: user.salespersonProfile?.status,
     },
-    expiresIn: '7d',
+    expiresIn: remember ? '7d' : '12h',
+    remember,
   });
-  const { name, ...opts } = sessionCookieOptions();
+  const { name, ...opts } = sessionCookieOptions(remember ? undefined : null);
   res.cookies.set(name, token, opts);
   return res;
 }

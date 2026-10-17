@@ -3,6 +3,7 @@
 import React, { useId, useState } from 'react';
 import { Paperclip } from 'lucide-react';
 import { uploadFile } from '@/lib/client/upload';
+import DocLink from '@/components/shared/DocLink';
 
 /** Camera/file picker that uploads immediately; the stored URL is what gets submitted. */
 export default function FileAttach({ label, value, onChange, disabled }: { label: string; value: string; onChange: (url: string) => void; disabled?: boolean }) {
@@ -27,7 +28,7 @@ export default function FileAttach({ label, value, onChange, disabled }: { label
       <p className="text-xs font-semibold text-[#0B1320]">{label}</p>
       {value ? (
         <div className="flex items-center justify-between rounded-xl border border-[#B4E39C] bg-[#E6F4DD] px-3 py-2 text-xs text-[#2E6819]">
-          <a href={value} target="_blank" rel="noopener noreferrer" className="underline font-semibold">Attached — view</a>
+          <DocLink href={value} className="underline font-semibold">Attached — view</DocLink>
           <button type="button" onClick={() => onChange('')} className="font-semibold">Remove</button>
         </div>
       ) : (

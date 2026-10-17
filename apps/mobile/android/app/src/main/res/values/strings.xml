@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">SalesGrid</string>
+    <string name="title_activity_main">SalesGrid</string>
+    <string name="package_name">com.salesgrid.app</string>
+    <string name="custom_url_scheme">com.salesgrid.app</string>
+</resources>

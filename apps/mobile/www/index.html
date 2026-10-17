@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SalesGrid</title>
+    <script src="app-config.js"></script>
+  </head>
+  <body style="margin:0;background:#081224">
+    <!-- Not normally shown: the app loads server.url directly. Kept as a safe fallback. -->
+    <script>
+      if (window.SALESGRID_SERVER_URL) window.location.replace(window.SALESGRID_SERVER_URL);
+    </script>
+  </body>
+</html>

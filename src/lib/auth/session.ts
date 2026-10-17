@@ -84,18 +84,24 @@ export async function resolveSessionToken(token: string | null | undefined): Pro
   return { user: await loadAuthenticatedUser(payload.userId, payload.tv), payload };
 }
 
-export async function authenticateRequest(req: NextRequest | Request): Promise<{ user: AuthenticatedUser | null; tokenIat?: number }> {
+export async function authenticateRequest(
+  req: NextRequest | Request
+): Promise<{ user: AuthenticatedUser | null; tokenIat?: number; tokenRemember?: boolean }> {
   const { user, payload } = await resolveSessionToken(extractToken(req));
-  return { user, tokenIat: payload?.iat };
+  return { user, tokenIat: payload?.iat, tokenRemember: payload?.rm };
 }
 
-export function sessionCookieOptions(maxAge = SESSION_MAX_AGE_SECONDS) {
+/**
+ * `maxAge: null` = session cookie (no Max-Age/Expires): removed when the browser or the Android app
+ * process closes. Used when "Remember me" is off.
+ */
+export function sessionCookieOptions(maxAge: number | null = SESSION_MAX_AGE_SECONDS) {
   return {
     name: SESSION_COOKIE,
     httpOnly: true,
     sameSite: 'lax' as const,
     secure: config.secureCookies,
     path: '/',
-    maxAge,
+    ...(maxAge === null ? {} : { maxAge }),
   };
 }

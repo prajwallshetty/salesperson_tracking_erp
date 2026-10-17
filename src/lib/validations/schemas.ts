@@ -5,6 +5,8 @@ export const loginSchema = z.object({
   identifier: z.string().min(3, 'Employee code, phone, or email is required'),
   password: z.string().min(4, 'Password must be at least 4 characters'),
   deviceId: z.string().optional(),
+  /** "Remember me" (default true = legacy 7-day persistent session). */
+  remember: z.boolean().optional(),
 });
 
 export const locationPointSchema = z.object({
@@ -121,6 +123,7 @@ export const accessCodeLoginSchema = z.object({
   identifier: z.string().min(2, 'Employee ID or Mobile number is required'),
   accessCode: z.string().min(4, 'Access code must be at least 4 characters').max(32),
   deviceId: z.string().optional(),
+  remember: z.boolean().optional(),
 });
 
 export const generateAccessCodeSchema = z.object({

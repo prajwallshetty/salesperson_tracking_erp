@@ -34,7 +34,8 @@ realtime, SalesGrid runs Next.js inside a small Node server that also hosts Sock
 | `CORS_ORIGINS` | no | Only needed for cross-origin API clients (e.g. a native app during transition). Same-origin web use needs none. |
 | `COOKIE_SECURE` | no | Defaults to `true` in production (HTTPS required). |
 | `AUTH_RATE_LIMIT_MAX`, `API_RATE_LIMIT_MAX` | no | Per IP per 15 min (defaults 30 / 1000, same as legacy). |
-| `SHOW_DEMO_LOGINS` | no | Never enable in production. |
+| `DEV_QUICK_LOGIN` | no | Development quick login; ignored when `NODE_ENV=production`. (Replaces `SHOW_DEMO_LOGINS`.) |
+| `ANDROID_MIN_BUILD`, `ANDROID_LATEST_BUILD`, `ANDROID_UPDATE_URL` | no | Android app update gate — see `docs/MOBILE_ANDROID.md`. |
 | `REDIS_URL` | no | `redis://` or `rediss://`. Enables multi-instance mode (see above). In production the server refuses to start if it cannot reach Redis for Socket.IO; if Redis drops later, requests keep working with per-instance rate limits, cross-instance realtime pauses, and `/api/health` reports `"redis": "down"`. |
 | `ALLOW_QUERY_TOKEN` | no | Default off. `true` re-enables legacy `?token=` authentication on API URLs and the socket handshake, for an old client during rollout only (tokens in URLs leak into logs). |
 

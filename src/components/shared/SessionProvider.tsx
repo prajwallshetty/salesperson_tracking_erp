@@ -3,6 +3,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { hasPermission as checkPermission, hasRole as checkRole, type ManagerPermissionKey, type Role } from '@/lib/permissions';
 import type { ClientUser } from '@/lib/auth/server';
+import DeviceLock from '@/components/native/DeviceLock';
+import { clearDeviceSession } from '@/lib/native/deviceSession';
 
 interface SessionContextValue {
   user: ClientUser | null;
@@ -41,14 +43,16 @@ export function SessionProvider({ initialUser, children }: { initialUser: Client
     return () => clearInterval(id);
   }, [user]);
 
+  const userId = user?.id;
   const logout = useCallback(async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
     } finally {
+      await clearDeviceSession(userId);
       setUser(null);
       window.location.assign('/login');
     }
-  }, []);
+  }, [userId]);
 
   const logoutEverywhere = useCallback(async () => {
     const res = await fetch('/api/auth/logout-all', { method: 'POST', credentials: 'same-origin' });
@@ -56,9 +60,10 @@ export function SessionProvider({ initialUser, children }: { initialUser: Client
       const body = await res.json().catch(() => ({}));
       throw new Error(body.error || 'Could not sign out of other devices. Please try again.');
     }
+    await clearDeviceSession(userId, { everywhere: true });
     setUser(null);
     window.location.assign('/login');
-  }, []);
+  }, [userId]);
 
   const value: SessionContextValue = {
     user,
@@ -70,7 +75,12 @@ export function SessionProvider({ initialUser, children }: { initialUser: Client
     hasPermission: (perm) => checkPermission(user, perm),
     refreshUser,
   };
-  return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
+  return (
+    <SessionContext.Provider value={value}>
+      {children}
+      {user && <DeviceLock userId={user.id} onSignOut={logout} />}
+    </SessionContext.Provider>
+  );
 }
 
 export function useSession() {

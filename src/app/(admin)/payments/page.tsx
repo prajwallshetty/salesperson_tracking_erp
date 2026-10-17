@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/components/shared/SessionProvider';
 import { apiFetch } from '@/lib/client/apiFetch';
+import { openDocument } from '@/lib/native/documents';
 
 const PAYMENT_STEPS = [
   { id: 'client', label: 'Client' },
@@ -126,7 +127,7 @@ function PaymentsContent() {
 
   const handleDownloadPdf = (id: string) => {
     if (!token) return;
-    window.open(`/api/payments/${id}/receipt-pdf`, '_blank', 'noopener');
+    openDocument(`/api/payments/${id}/receipt-pdf`, 'receipt.pdf').catch((e) => alert((e as Error).message));
   };
 
   const handleSubmitPayment = async () => {

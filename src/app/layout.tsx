@@ -1,5 +1,6 @@
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
+import NativeShell from '@/components/native/NativeShell';
 
 export const metadata: Metadata = {
   title: { default: 'SalesGrid', template: '%s · SalesGrid' },
@@ -17,7 +18,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="bg-[#F5F7F8] text-[#0B1320] antialiased min-h-screen">{children}</body>
+      <body className="bg-[#F5F7F8] text-[#0B1320] antialiased min-h-screen">
+        {children}
+        <NativeShell />
+      </body>
     </html>
   );
 }

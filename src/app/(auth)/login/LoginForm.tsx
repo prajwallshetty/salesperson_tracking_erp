@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AlertCircle, ArrowRight, KeyRound, Lock, User } from 'lucide-react';
 import { BrandMark } from '@/components/shared/Brand';
 import { homePathForRole, type Role } from '@/lib/permissions';
 import { apiJson, errorMessage } from '@/lib/client/apiFetch';
+import { forgetQuickAccess, readQuickAccess, saveQuickAccess } from '@/lib/client/quickAccess';
+import { isNativeApp } from '@/lib/native/platform';
 
 type Mode = 'PASSWORD' | 'ACCESS_CODE';
 
@@ -17,23 +19,53 @@ function safeNext(next: string | null, role: Role): string {
   return (role === 'SALESPERSON') === isField ? next : home;
 }
 
-const DEMO = [
-  { label: 'Super Admin', id: 'admin@erp.com', mode: 'PASSWORD' as Mode, secret: 'Password123!' },
-  { label: 'Manager', id: 'manager@erp.com', mode: 'PASSWORD' as Mode, secret: 'Password123!' },
-  { label: 'Salesperson', id: 'rahul@erp.com', mode: 'PASSWORD' as Mode, secret: 'Password123!' },
-  { label: 'Access code', id: 'EMP-001', mode: 'ACCESS_CODE' as Mode, secret: 'RAHUL12345' },
-];
+interface DevAccount {
+  id: string;
+  name: string;
+  role: Role;
+  label: string;
+}
+const ROLE_LABEL: Record<Role, string> = { SUPER_ADMIN: 'Super admin', MANAGER: 'Manager', SALESPERSON: 'Salesperson' };
 
 const inputCls =
   'w-full pl-9 pr-3 py-2.5 text-base sm:text-sm bg-white border border-[#CBD2D7] rounded-lg text-[#0B1320] placeholder:text-[#8C9BA5] focus:ring-2 focus:ring-[#081224]/20 focus:border-[#081224] focus:outline-none';
 
-export default function LoginForm({ showDemo }: { showDemo: boolean }) {
+export default function LoginForm({ devQuickLogin }: { devQuickLogin: boolean }) {
   const params = useSearchParams();
   const [mode, setMode] = useState<Mode>('PASSWORD');
   const [identifier, setIdentifier] = useState('');
   const [secret, setSecret] = useState('');
+  const [remember, setRemember] = useState(false);
+  const [rememberedName, setRememberedName] = useState(false);
   const [error, setError] = useState(params.get('expired') ? 'Your session has expired. Please sign in again.' : '');
   const [loading, setLoading] = useState(false);
+  const [devAccounts, setDevAccounts] = useState<DevAccount[]>([]);
+
+  // Quick access: prefill the remembered sign-in name. In the Android app (a personal device)
+  // Remember me starts checked; in a browser it starts unchecked unless chosen before.
+  useEffect(() => {
+    const saved = readQuickAccess();
+    if (saved) {
+      setMode(saved.mode);
+      setIdentifier(saved.identifier);
+      setRememberedName(true);
+      setRemember(true);
+    } else {
+      setRemember(isNativeApp());
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!devQuickLogin) return;
+    apiJson<{ data: DevAccount[] }>('/api/auth/dev-login')
+      .then((r) => setDevAccounts(r.data))
+      .catch(() => setDevAccounts([]));
+  }, [devQuickLogin]);
+
+  const finish = (role: Role) => {
+    // Full navigation so the server layout renders with the new session cookie.
+    window.location.assign(safeNext(params.get('next'), role));
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,10 +74,25 @@ export default function LoginForm({ showDemo }: { showDemo: boolean }) {
     try {
       const res = await apiJson<{ user: { role: Role } }>(mode === 'PASSWORD' ? '/api/auth/login' : '/api/auth/access-code-login', {
         method: 'POST',
-        json: mode === 'PASSWORD' ? { identifier: identifier.trim(), password: secret } : { identifier: identifier.trim(), accessCode: secret.trim().toUpperCase() },
+        json:
+          mode === 'PASSWORD'
+            ? { identifier: identifier.trim(), password: secret, remember }
+            : { identifier: identifier.trim(), accessCode: secret.trim().toUpperCase(), remember },
       });
-      // Full navigation so the server layout renders with the new session cookie.
-      window.location.assign(safeNext(params.get('next'), res.user.role));
+      saveQuickAccess({ identifier: identifier.trim(), mode, remember });
+      finish(res.user.role);
+    } catch (err) {
+      setError(errorMessage(err, 'Sign-in failed'));
+      setLoading(false);
+    }
+  };
+
+  const devSignIn = async (account: DevAccount) => {
+    setError('');
+    setLoading(true);
+    try {
+      const res = await apiJson<{ user: { role: Role } }>('/api/auth/dev-login', { method: 'POST', json: { userId: account.id, remember } });
+      finish(res.user.role);
     } catch (err) {
       setError(errorMessage(err, 'Sign-in failed'));
       setLoading(false);
@@ -129,6 +176,29 @@ export default function LoginForm({ showDemo }: { showDemo: boolean }) {
           </div>
           {mode === 'ACCESS_CODE' && <p className="text-[11px] text-[#80909D] mt-1.5">Issued by your administrator. Locks for 15 minutes after 5 wrong attempts.</p>}
         </div>
+        <div className="flex items-center justify-between gap-3">
+          <label className="inline-flex items-center gap-2 text-xs text-[#0B1320]">
+            <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="w-4 h-4 accent-[#081224]" />
+            Remember me
+          </label>
+          {rememberedName && (
+            <button
+              type="button"
+              onClick={() => {
+                forgetQuickAccess();
+                setIdentifier('');
+                setRememberedName(false);
+                setRemember(isNativeApp());
+              }}
+              className="text-[11px] font-semibold text-[#259DC3]"
+            >
+              Not you?
+            </button>
+          )}
+        </div>
+        <p className="text-[11px] text-[#80909D] -mt-2">
+          {remember ? 'Stay signed in on this device for 7 days.' : 'You will be signed out when you close the browser or app (at most 12 hours).'}
+        </p>
         <button
           type="submit"
           disabled={loading || !identifier.trim() || !secret}
@@ -141,27 +211,30 @@ export default function LoginForm({ showDemo }: { showDemo: boolean }) {
 
       <p className="text-[11px] text-[#80909D] text-center mt-5">Forgot your password or code? Contact your administrator — they can issue a new access code.</p>
 
-      {showDemo && (
+      {devQuickLogin && (
         <div className="mt-6 pt-5 border-t border-[#E2E7EC]">
-          <p className="text-[11px] font-semibold text-[#586570] uppercase tracking-wider mb-2 text-center">Demo accounts (seeded data)</p>
-          <div className="grid grid-cols-2 gap-2">
-            {DEMO.map((d) => (
-              <button
-                key={d.label}
-                type="button"
-                onClick={() => {
-                  setMode(d.mode);
-                  setIdentifier(d.id);
-                  setSecret(d.secret);
-                  setError('');
-                }}
-                className="p-2 rounded-lg bg-[#F3F5F6] border border-[#CBD2D7] hover:border-[#081224] text-left"
-              >
-                <p className="text-[11px] font-bold text-[#0B1320]">{d.label}</p>
-                <p className="text-[10px] text-[#586570] truncate">{d.id}</p>
-              </button>
-            ))}
-          </div>
+          <p className="text-[11px] font-semibold text-[#586570] uppercase tracking-wider mb-2 text-center">Development quick login</p>
+          {devAccounts.length === 0 ? (
+            <p className="text-[11px] text-[#80909D] text-center">No active accounts in this database.</p>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              {devAccounts.map((d) => (
+                <button
+                  key={d.id}
+                  type="button"
+                  disabled={loading}
+                  onClick={() => devSignIn(d)}
+                  className="p-2 rounded-lg bg-[#F3F5F6] border border-[#CBD2D7] hover:border-[#081224] text-left disabled:opacity-50"
+                >
+                  <p className="text-[11px] font-bold text-[#0B1320] truncate">{d.name}</p>
+                  <p className="text-[10px] text-[#586570] truncate">
+                    {ROLE_LABEL[d.role]} · {d.label}
+                  </p>
+                </button>
+              ))}
+            </div>
+          )}
+          <p className="text-[10px] text-[#80909D] text-center mt-2">Shown because DEV_QUICK_LOGIN=true. Never available in production.</p>
         </div>
       )}
     </div>

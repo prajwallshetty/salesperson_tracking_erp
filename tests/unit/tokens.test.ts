@@ -30,6 +30,16 @@ describe('session tokens', () => {
     expect(tokens.verifySessionToken(legacyId)?.userId).toBe('u2');
     expect(tokens.verifySessionToken(jwt.sign({ userId: 'u1' }, 'other-secret'))).toBeNull();
   });
+
+  it('remember me: 7-day token by default (legacy), 12-hour token when off', async () => {
+    const { tokens } = await load({ JWT_SECRET: SECRET });
+    const long = jwt.decode(tokens.signSessionToken('u1', 'SALESPERSON', 0)) as any;
+    const short = jwt.decode(tokens.signSessionToken('u1', 'SALESPERSON', 0, false)) as any;
+    expect(long.exp - long.iat).toBe(7 * 24 * 3600);
+    expect(short.exp - short.iat).toBe(12 * 3600);
+    expect(tokens.verifySessionToken(tokens.signSessionToken('u1', 'SALESPERSON', 0, false))?.rm).toBe(false);
+    expect(tokens.verifySessionToken(jwt.sign({ userId: 'u1', role: 'SALESPERSON' }, SECRET))?.rm).toBe(true);
+  });
 });
 
 describe('token extraction', () => {

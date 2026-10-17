@@ -13,7 +13,7 @@ export const POST = publicRoute(async (ctx) => {
   const body = await readJson(ctx.req);
   const result = loginSchema.safeParse({ ...body, identifier: body.identifier || body.email || body.phone });
   if (!result.success) return json({ error: result.error.errors[0]?.message || 'Invalid input parameters' }, 400);
-  const { identifier, password, deviceId } = result.data;
+  const { identifier, password, deviceId, remember } = result.data;
 
   // Email, phone, or employee code (legacy lookup).
   const user = await prisma.user.findFirst({
@@ -33,5 +33,5 @@ export const POST = publicRoute(async (ctx) => {
     await prisma.salesperson.update({ where: { id: user.salespersonProfile.id }, data: { deviceId } });
   }
   await logAuditEvent({ actor, action: 'LOGIN_SUCCESS', module: 'AUTH', newValue: { role: user.role, email: user.email } });
-  return loginResponse(user);
+  return loginResponse(user, { remember });
 }, { rateLimit: AUTH_LIMIT });

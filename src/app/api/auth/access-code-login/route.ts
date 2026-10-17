@@ -15,7 +15,7 @@ const LOCK_MINUTES = 15;
 export const POST = publicRoute(async (ctx) => {
   const result = accessCodeLoginSchema.safeParse(await readJson(ctx.req));
   if (!result.success) return json({ error: result.error.errors[0]?.message || 'Invalid input parameters' }, 400);
-  const { identifier, accessCode, deviceId } = result.data;
+  const { identifier, accessCode, deviceId, remember } = result.data;
 
   const user = await prisma.user.findFirst({
     where: { OR: [{ salespersonProfile: { employeeCode: identifier } }, { phone: identifier }, { email: identifier }] },
@@ -63,5 +63,5 @@ export const POST = publicRoute(async (ctx) => {
     await prisma.salesperson.update({ where: { id: user.salespersonProfile.id }, data: { deviceId } });
   }
   await logAuditEvent({ actor, action: 'ACCESS_CODE_LOGIN_SUCCESS', module: 'AUTH', recordId: activeCode.id, newValue: { role: user.role, method: 'ACCESS_CODE' } });
-  return loginResponse(user);
+  return loginResponse(user, { remember });
 }, { rateLimit: AUTH_LIMIT });
