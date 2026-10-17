@@ -19,7 +19,18 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/components/shared/SessionProvider';
 import { apiFetch } from '@/lib/client/apiFetch';
-import { useSocket } from '@/components/shared/RealtimeProvider';
+import { useSocket, useRealtimeRefresh } from '@/components/shared/RealtimeProvider';
+import { SOCKET_EVENTS } from '@/lib/domain/constants';
+import { computeLiveState, type LiveState } from '@/features/tracking/liveState';
+
+const STATE_STYLE: Record<LiveState, { dot: string; text: string; bg: string; border: string }> = {
+  live: { dot: 'bg-[#2E6819]', text: 'text-[#2E6819]', bg: 'bg-[#E6F4DD]', border: 'border-[#B4E39C]' },
+  stale: { dot: 'bg-[#B45309]', text: 'text-[#92400E]', bg: 'bg-[#FEF3C7]', border: 'border-[#FDE68A]' },
+  unavailable: { dot: 'bg-[#80909D]', text: 'text-[#586570]', bg: 'bg-[#F3F5F6]', border: 'border-[#CBD2D7]' },
+  permission_denied: { dot: 'bg-[#991B1B]', text: 'text-[#991B1B]', bg: 'bg-[#FDF2F2]', border: 'border-[#F8C4C4]' },
+  gps_disabled: { dot: 'bg-[#991B1B]', text: 'text-[#991B1B]', bg: 'bg-[#FDF2F2]', border: 'border-[#F8C4C4]' },
+  off_duty: { dot: 'bg-[#80909D]', text: 'text-[#586570]', bg: 'bg-[#F3F5F6]', border: 'border-[#CBD2D7]' },
+};
 
 export default function LiveTrackingPage() {
   const { token } = useAuth();
@@ -29,6 +40,12 @@ export default function LiveTrackingPage() {
   const [loading, setLoading] = useState(true);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [filterDuty, setFilterDuty] = useState<'ALL' | 'ON_DUTY' | 'OFF_DUTY'>('ALL');
+  // Re-evaluate "live vs stale" every 20 s from the real fix times, so a marker never stays "live" just because nothing arrived.
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 20000);
+    return () => clearInterval(id);
+  }, []);
 
   const fetchTrackingData = async () => {
     if (!token) return;
@@ -38,8 +55,23 @@ export default function LiveTrackingPage() {
         await apiFetch('/api/salespersons/live-status').then((s) => s.json()),
       ]);
 
-      setTrackers(currentRes.data || []);
-      setLiveStatuses(statusRes.data || []);
+      // A fetch that started before a newer fix arrived over the socket must not roll the position back:
+      // keep whichever position is newer, take everything else (duty, device state) from the server.
+      const newer = (a?: string, b?: string) => Boolean(a) && (!b || new Date(a!).getTime() > new Date(b).getTime());
+      setTrackers((prev) =>
+        (currentRes.data || []).map((t: any) => {
+          const p = prev.find((x) => x.salespersonId === t.salespersonId);
+          return newer(p?.currentLocation?.timestamp, t.currentLocation?.timestamp) ? { ...t, currentLocation: p.currentLocation } : t;
+        })
+      );
+      setLiveStatuses((prev) =>
+        (statusRes.data || []).map((st: any) => {
+          const p = prev.find((x) => x.id === st.id);
+          return newer(p?.lastUpdate, st.lastUpdate)
+            ? { ...st, lastLatitude: p.lastLatitude, lastLongitude: p.lastLongitude, accuracy: p.accuracy, speed: p.speed, batteryLevel: p.batteryLevel, lastUpdate: p.lastUpdate }
+            : st;
+        })
+      );
       setLastRefreshed(new Date());
     } catch (e) {
       console.error(e);
@@ -65,24 +97,47 @@ export default function LiveTrackingPage() {
       setTrackers((prev) =>
         prev.map((t) => (t.salespersonId === salespersonId ? { ...t, currentLocation: { ...t.currentLocation, ...point }, isOnline: true } : t))
       );
+      // Position and fix time come from the fix itself; the state is re-derived from that time (never "just now" by assumption).
       setLiveStatuses((prev) =>
         prev.map((s) =>
           s.id === salespersonId
-            ? { ...s, lastLatitude: point.latitude, lastLongitude: point.longitude, speed: point.speed ?? null, batteryLevel: point.batteryLevel ?? null, lastUpdate: point.timestamp, lastUpdateFormatted: 'Just now', minutesSinceUpdate: 0 }
+            ? { ...s, lastLatitude: point.latitude, lastLongitude: point.longitude, accuracy: point.accuracy ?? null, speed: point.speed ?? null, batteryLevel: point.batteryLevel ?? null, lastUpdate: point.timestamp }
             : s
         )
       );
       setLastRefreshed(new Date());
     };
 
-    socket.on('location:update', handleLocationUpdate);
-    socket.on('attendance:changed', () => fetchTrackingData());
+    socket.on(SOCKET_EVENTS.LOCATION_UPDATE, handleLocationUpdate);
 
     return () => {
-      socket.off('location:update', handleLocationUpdate);
-      socket.off('attendance:changed');
+      socket.off(SOCKET_EVENTS.LOCATION_UPDATE, handleLocationUpdate);
     };
   }, [socket]);
+
+  // Duty changes, device-reported permission/GPS problems, team changes, and anything missed while
+  // disconnected or in the background: refetch the authoritative state.
+  useRealtimeRefresh(fetchTrackingData, [SOCKET_EVENTS.ATTENDANCE_CHANGED, SOCKET_EVENTS.TRACKING_STATE, SOCKET_EVENTS.TEAM_CHANGED]);
+
+  const withLive = (s: any) =>
+    computeLiveState({ dutyStatus: s.dutyStatus, lastFixAt: s.lastUpdate, deviceState: s.deviceTrackingState, deviceStateAt: s.deviceTrackingStateAt, now });
+  const statusById = new Map(liveStatuses.map((s) => [s.id, s]));
+  const mapData = trackers.map((t) => {
+    const st = statusById.get(t.salespersonId);
+    const live = computeLiveState({
+      dutyStatus: t.dutyStatus,
+      lastFixAt: t.currentLocation?.timestamp,
+      deviceState: st?.deviceTrackingState,
+      deviceStateAt: st?.deviceTrackingStateAt,
+      now,
+    });
+    return { ...t, isOnline: live.state === 'live', liveState: live.state, liveStateLabel: live.label };
+  });
+
+  const formatAgeFrom = (iso: string, at: Date) => {
+    const min = Math.max(0, Math.floor((at.getTime() - new Date(iso).getTime()) / 60000));
+    return min < 1 ? 'just now' : min < 60 ? `${min} min ago` : min < 1440 ? `${Math.floor(min / 60)}h ago` : `${Math.floor(min / 1440)}d ago`;
+  };
 
   const filteredStatuses = liveStatuses.filter((s) => {
     if (filterDuty === 'ON_DUTY') return s.dutyStatus === 'ON_DUTY';
@@ -117,7 +172,7 @@ export default function LiveTrackingPage() {
             </div>
           </div>
           <div className="flex-1 relative">
-            <LiveMap salespersons={trackers} />
+            <LiveMap salespersons={mapData} />
           </div>
         </div>
 
@@ -170,6 +225,21 @@ export default function LiveTrackingPage() {
                     <StatusBadge status={sp.dutyStatus} />
                   </div>
 
+                  {(() => {
+                    const live = withLive(sp);
+                    const st = STATE_STYLE[live.state];
+                    return (
+                      <div role="status" data-live-state={live.state} className={`flex items-start gap-2 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold ${st.bg} ${st.border} ${st.text}`}>
+                        <span className={`mt-1 w-2 h-2 rounded-full shrink-0 ${st.dot} ${live.state === 'live' ? 'animate-pulse' : ''}`} />
+                        <span>
+                          {live.label}
+                          {sp.deviceTrackingDetail && (live.state === 'permission_denied' || live.state === 'gps_disabled') ? <span className="block font-normal">{sp.deviceTrackingDetail}</span> : null}
+                          {live.backgroundLimited && live.state === 'live' ? <span className="block font-normal">Foreground only: reports while the app is open</span> : null}
+                        </span>
+                      </div>
+                    );
+                  })()}
+
                   <div className="flex items-center justify-between text-[11px] text-[#586570] pt-2 border-t border-[#E2E7EC]">
                     <div className="flex items-center gap-2">
                       {sp.batteryLevel !== null && (
@@ -186,10 +256,11 @@ export default function LiveTrackingPage() {
                       )}
                     </div>
                     <span
-                      className={`text-[10px] ${sp.dutyStatus === 'ON_DUTY' && (sp.minutesSinceUpdate == null || sp.minutesSinceUpdate > 10) ? 'text-[#B45309] font-semibold' : 'text-[#80909D]'}`}
+                      className="text-[10px] text-[#80909D]"
                       title={sp.lastUpdate ? new Date(sp.lastUpdate).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : 'No GPS fix received'}
                     >
-                      {sp.dutyStatus === 'ON_DUTY' && (sp.minutesSinceUpdate == null || sp.minutesSinceUpdate > 10) ? `Stale · ${sp.lastUpdateFormatted}` : sp.lastUpdateFormatted}
+                      {sp.lastUpdate ? `Last fix ${formatAgeFrom(sp.lastUpdate, now)}` : 'No GPS recorded'}
+                      {sp.accuracy != null ? ` · ±${Math.round(sp.accuracy)} m` : ''}
                     </span>
                   </div>
 

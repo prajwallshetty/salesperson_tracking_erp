@@ -1,15 +1,17 @@
 import type { NextRequest } from 'next/server';
-import { prisma, UserStatus } from '@/lib/db';
+import { prismaRoot, UserStatus, TenantStatus } from '@/lib/db';
 import { config } from '@/lib/config';
 import { DEFAULT_MANAGER_PERMISSIONS, MANAGER_PERMISSION_KEYS, type AuthenticatedUser, type PermissionMap } from '@/lib/permissions';
 import { SESSION_COOKIE, SESSION_MAX_AGE_SECONDS } from './constants';
-import { verifySessionToken } from './tokens';
+import { verifySessionToken, type TokenPayload } from './tokens';
 
 /**
  * Token lookup order:
  *  1. `Authorization: Bearer <jwt>` (legacy API contract; native/API clients)
  *  2. httpOnly session cookie (browser UI)
- *  3. `?token=` query (legacy contract for receipt-PDF/CSV links opened in a new tab)
+ *  3. `?token=` query — legacy contract for links opened in a new tab. Off by default because
+ *     URLs end up in logs, history and Referer headers; set ALLOW_QUERY_TOKEN=true to restore it
+ *     for an old client during rollout. The browser UI never needs it (it uses the cookie).
  */
 export function extractToken(req: NextRequest | Request): string | null {
   const header = req.headers.get('authorization');
@@ -25,9 +27,14 @@ export function extractToken(req: NextRequest | Request): string | null {
       if (value) return value;
     }
   }
-  const url = new URL(req.url);
-  const q = url.searchParams.get('token');
+  if (!config.allowQueryToken) return null;
+  const q = new URL(req.url).searchParams.get('token');
   return q || null;
+}
+
+/** Active status and (if set) subscription end date not yet reached. */
+export function isTenantUsable(t: { status: TenantStatus | string; activeUntil: Date | null }, now = new Date()): boolean {
+  return t.status === TenantStatus.ACTIVE && (!t.activeUntil || t.activeUntil.getTime() > now.getTime());
 }
 
 function toPermissionMap(row: Partial<Record<string, unknown>> | null): PermissionMap {
@@ -45,16 +52,23 @@ function toPermissionMap(row: Partial<Record<string, unknown>> | null): Permissi
  * deactivated users and changed roles/team assignments take effect immediately,
  * and nothing in the token can elevate role or scope.
  */
-export async function loadAuthenticatedUser(userId: string): Promise<AuthenticatedUser | null> {
-  const user = await prisma.user.findUnique({
+export async function loadAuthenticatedUser(userId: string, tokenVersion?: number): Promise<AuthenticatedUser | null> {
+  // Unscoped on purpose: the tenant is not known yet — it is derived from this row. The id comes
+  // from a token signed by this server.
+  const user = await prismaRoot.user.findUnique({
     where: { id: userId },
     include: {
+      tenant: true,
       salespersonProfile: true,
       managerPermissions: true,
       managedSalespersons: { select: { salespersonId: true } },
     },
   });
   if (!user || user.status !== UserStatus.ACTIVE) return null;
+  // Subscription rules: a suspended or expired company cannot use the app.
+  if (!isTenantUsable(user.tenant)) return null;
+  // Sessions issued before the user's last "sign out everywhere" are no longer valid.
+  if (tokenVersion !== undefined && tokenVersion !== user.tokenVersion) return null;
 
   return {
     id: user.id,
@@ -63,6 +77,11 @@ export async function loadAuthenticatedUser(userId: string): Promise<Authenticat
     phone: user.phone,
     role: user.role,
     status: user.status,
+    tokenVersion: user.tokenVersion,
+    tenantId: user.tenantId,
+    tenantSlug: user.tenant.slug,
+    tenantName: user.tenant.name,
+    tenantActiveUntil: user.tenant.activeUntil ? user.tenant.activeUntil.toISOString() : null,
     salespersonId: user.salespersonProfile?.id,
     employeeCode: user.salespersonProfile?.employeeCode,
     territory: user.salespersonProfile?.territory,
@@ -71,21 +90,32 @@ export async function loadAuthenticatedUser(userId: string): Promise<Authenticat
   };
 }
 
-export async function authenticateRequest(req: NextRequest | Request): Promise<{ user: AuthenticatedUser | null; tokenIat?: number }> {
-  const token = extractToken(req);
+/** Verifies a session token and loads its user; the single check used by API, pages and sockets. */
+export async function resolveSessionToken(token: string | null | undefined): Promise<{ user: AuthenticatedUser | null; payload?: TokenPayload }> {
   if (!token) return { user: null };
   const payload = verifySessionToken(token);
   if (!payload) return { user: null };
-  return { user: await loadAuthenticatedUser(payload.userId), tokenIat: payload.iat };
+  return { user: await loadAuthenticatedUser(payload.userId, payload.tv), payload };
 }
 
-export function sessionCookieOptions(maxAge = SESSION_MAX_AGE_SECONDS) {
+export async function authenticateRequest(
+  req: NextRequest | Request
+): Promise<{ user: AuthenticatedUser | null; tokenIat?: number; tokenRemember?: boolean }> {
+  const { user, payload } = await resolveSessionToken(extractToken(req));
+  return { user, tokenIat: payload?.iat, tokenRemember: payload?.rm };
+}
+
+/**
+ * `maxAge: null` = session cookie (no Max-Age/Expires): removed when the browser or the Android app
+ * process closes. Used when "Remember me" is off.
+ */
+export function sessionCookieOptions(maxAge: number | null = SESSION_MAX_AGE_SECONDS) {
   return {
     name: SESSION_COOKIE,
     httpOnly: true,
     sameSite: 'lax' as const,
     secure: config.secureCookies,
     path: '/',
-    maxAge,
+    ...(maxAge === null ? {} : { maxAge }),
   };
 }

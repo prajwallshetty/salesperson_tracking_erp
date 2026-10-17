@@ -1,4 +1,4 @@
-import { Prisma, LedgerEntryType } from '@/lib/db';
+import { Prisma, LedgerEntryType, TxClient, currentTenantId } from '@/lib/db';
 import { notFound } from '@/lib/http/errors';
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -8,9 +8,9 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
  * Legacy defect fixed: balances were read outside the transaction, so concurrent order and
  * payment postings could overwrite each other's running balance.
  */
-export async function lockClientOutstanding(tx: Prisma.TransactionClient, clientId: string): Promise<number> {
+export async function lockClientOutstanding(tx: TxClient, clientId: string): Promise<number> {
   const rows = await tx.$queryRaw<{ currentOutstanding: Prisma.Decimal }[]>`
-    SELECT "currentOutstanding" FROM "clients" WHERE "id" = ${clientId} FOR UPDATE`;
+    SELECT "currentOutstanding" FROM "clients" WHERE "id" = ${clientId} AND "tenantId" = ${currentTenantId()} FOR UPDATE`;
   if (!rows.length) throw notFound('Client not found');
   return Number(rows[0].currentOutstanding);
 }
@@ -21,7 +21,7 @@ export async function lockClientOutstanding(tx: Prisma.TransactionClient, client
  *  - PAYMENT / REVERSAL decrease it, floored at zero (legacy `Math.max(0, …)` rule).
  */
 export async function postLedgerEntry(
-  tx: Prisma.TransactionClient,
+  tx: TxClient,
   entry: {
     clientId: string;
     entryType: LedgerEntryType;

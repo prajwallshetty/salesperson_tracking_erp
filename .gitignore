@@ -64,3 +64,7 @@ tmp/
 test-results/
 playwright-report/
 *.tsbuildinfo
+
+# Android shell (apps/mobile)
+apps/mobile/www/app-config.js
+apps/mobile/android/keystore.properties

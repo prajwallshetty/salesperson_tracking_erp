@@ -2,7 +2,8 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useSession } from '@/components/shared/SessionProvider';
-import { useSocket } from '@/components/shared/RealtimeProvider';
+import { useSocket, useRealtimeRefresh } from '@/components/shared/RealtimeProvider';
+import { SOCKET_EVENTS } from '@/lib/domain/constants';
 import { apiJson, isNetworkError, errorMessage } from '@/lib/client/apiFetch';
 import { enqueue, getOutbox, syncOutbox, updateItems, removeItem, type OutboxItem, type OutboxType, type SyncOutcome } from './outbox';
 import { FieldTracker, getCurrentFix, type Fix, type TrackingState } from './tracker';
@@ -59,7 +60,7 @@ export function FieldProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<Record<string, string>>({});
   const trackerRef = useRef<FieldTracker | null>(null);
   const [tracking, setTracking] = useState<TrackingState>({
-    status: 'idle', permission: 'unknown', lastFix: null, buffered: 0, lastUploadAt: null, lastError: null, wakeLock: false, wakeLockSupported: false,
+    status: 'idle', permission: 'unknown', lastFix: null, buffered: 0, lastUploadAt: null, lastError: null, wakeLock: false, wakeLockSupported: false, background: false, notificationsBlocked: false,
   });
 
   const refreshDashboard = useCallback(async () => {
@@ -154,6 +155,21 @@ export function FieldProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (lastEvent) refreshDashboard();
   }, [lastEvent, refreshDashboard]);
+
+  // Settings changed by the office (e.g. visit radius), and anything missed while the socket was
+  // down or the app was in the background: reload the dashboard and settings and push queued work.
+  const loadSettings = useCallback(
+    () =>
+      apiJson<{ data: { key: string; value: string }[] }>('/api/settings')
+        .then((r) => setSettings(Object.fromEntries(r.data.map((s) => [s.key, s.value]))))
+        .catch(() => undefined),
+    []
+  );
+  useRealtimeRefresh(loadSettings, [SOCKET_EVENTS.SETTINGS_CHANGED]);
+  useRealtimeRefresh(() => {
+    refreshDashboard();
+    void syncNow();
+  });
 
   const submit = useCallback<FieldContextValue['submit']>(
     async ({ url, body, type, label, idempotencyKey }) => {

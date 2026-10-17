@@ -6,7 +6,7 @@
  * redirect to login, preserving the current page.
  */
 export class ApiError extends Error {
-  constructor(public status: number, message: string, public details?: { field: string; message: string }[]) {
+  constructor(public status: number, message: string, public details?: { field: string; message: string }[], public code?: string) {
     super(message);
   }
 }
@@ -45,7 +45,7 @@ export async function apiJson<T = any>(input: string, init: RequestInit & { json
   } catch {
     body = { error: text };
   }
-  if (!res.ok) throw new ApiError(res.status, body.error || `Request failed (HTTP ${res.status})`, body.details);
+  if (!res.ok) throw new ApiError(res.status, body.error || `Request failed (HTTP ${res.status})`, body.details, body.code);
   return body as T;
 }
 

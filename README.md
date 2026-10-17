@@ -14,6 +14,7 @@ It replaces the former `admin/` (Next.js), `app/` (Expo / React Native), `api/` 
 | Manager | `/dashboard` … | Same console, limited to their team and to the permissions an admin grants |
 | Salesperson | `/field` | Mobile-first app: start/end day, GPS, visits, orders, collections, expenses, offline sync |
 | API clients | `/api/*` | REST API (Bearer token or session cookie). OpenAPI at `/api/docs` |
+| Android app | `apps/mobile` | Capacitor shell that loads the deployed app — web changes need no new APK. See [`docs/MOBILE_ANDROID.md`](docs/MOBILE_ANDROID.md) |
 
 ## Stack
 
@@ -22,7 +23,7 @@ Tailwind CSS · Leaflet / OpenStreetMap · Recharts · Zod · Vitest · Playwrig
 
 ```
 server.ts                  Custom server: Next.js + Socket.IO on one port
-prisma/                    schema.prisma, migrations/ (0_init baseline), seed.ts (dev/demo only)
+prisma/                    schema.prisma, migrations/ (0_init baseline + reviewed changes), seed.ts (dev/demo only)
 src/app/(auth)/login       Unified login (password or access code), role-based redirect
 src/app/(admin)/…          Admin & manager console pages
 src/app/(salesperson)/field Salesperson app (mobile-first)
@@ -32,6 +33,7 @@ src/features/field/        Browser GPS tracker, offline outbox, field context
 src/lib/                   auth, permissions, db, http, realtime, time, domain (calculator, geo), validations
 src/middleware.ts          Page redirects by role (UX only — the API authorizes every request itself)
 tests/unit|integration|e2e Vitest unit, API-against-PostgreSQL integration, Playwright end-to-end
+tests/multi-instance       Two production instances sharing PostgreSQL + Redis
 ```
 
 ## Local development
@@ -48,18 +50,30 @@ npm run dev                     # http://localhost:3000 (Next.js + Socket.IO)
 
 Seeded demo accounts (password `Password123!`): `admin@erp.com`, `manager@erp.com`,
 `rahul@erp.com` (or `EMP-001` / access code `RAHUL12345`), `ahmed@erp.com`, `vishal@erp.com`.
-Set `SHOW_DEMO_LOGINS=true` to show quick-fill buttons on the login page.
+Every account belongs to a **company** (tenant); the seed creates one, `default`. When more than one company
+exists, sign-in also asks for the company code. Manage companies with `npm run tenant -- --help`
+(create, list, suspend, set expiry, rename). Data of different companies is isolated by a tenant-scoped
+database client (see `docs/ARCHITECTURE.md`).
+Set `DEV_QUICK_LOGIN=true` for one-tap sign-in buttons on the login page (development only — ignored in
+production, and no passwords are sent to the browser).
 
 > `npm run dev:next` runs plain `next dev` without the custom server: everything works except realtime
 > push (pages fall back to polling).
 
+`npm run inventory` regenerates `docs/INVENTORY.md` (all pages, endpoints, models) from the code; a test fails if it is stale.
+Optional `LOCATION_RETENTION_DAYS` deletes old GPS points (off by default).
+
 ## Database & migrations
 
-- The Prisma schema is **unchanged** from the legacy API. `prisma/migrations/0_init` is a baseline generated
-  from it and verified to produce a schema identical to the legacy `prisma db push`.
-- **Existing database (created by `db push`)** — mark the baseline as applied once; no SQL is executed:
+- `prisma/migrations/0_init` is a baseline generated from the legacy schema and verified to produce a schema
+  identical to the legacy `prisma db push`. Later migrations are additive and reviewed: `1_session_revocation_and_file_ownership`,
+  `2_multi_tenancy` (adds `tenants`, `tenantId` columns, per-company unique keys; existing rows move into a default company),
+  `3_tracking_device_state`. All are applied by `prisma migrate deploy`.
+- **Existing database (created by `db push`)** — mark the baseline as applied once (no SQL is executed),
+  then apply the later migrations:
   ```bash
   npm run db:baseline            # prisma migrate resolve --applied 0_init
+  npm run db:migrate             # prisma migrate deploy
   ```
 - **New database**: `npm run db:migrate` (`prisma migrate deploy`).
 - Future schema changes: `npm run db:migrate:dev -- --name <change>` locally, review the SQL, commit, and
@@ -73,6 +87,7 @@ npm run lint
 npm run test:unit               # pure business logic (calculator, geo, timezone, permissions, http helpers)
 npm run test:integration        # starts the real server against a disposable *_test database
 npm run test:e2e                # builds for production, then Playwright (desktop console + mobile field app)
+npm run build && npm run test:multi-instance   # two instances + Redis (needs redis-server or TEST_REDIS_URL)
 ```
 
 Integration and E2E tests **reset** the database in `TEST_DATABASE_URL`
@@ -90,7 +105,9 @@ npx prisma migrate deploy
 npm start                        # NODE_ENV=production tsx server.ts
 ```
 
-Health check: `GET /api/health` (checks the database; reports whether realtime is active).
+Health check: `GET /api/health` (checks the database; reports whether realtime is active and, when
+`REDIS_URL` is set, whether Redis is reachable). One instance needs nothing else; for several instances
+set `REDIS_URL` and share `UPLOAD_DIR` (see DEPLOYMENT.md).
 
 ## Documentation
 
@@ -100,3 +117,6 @@ Health check: `GET /api/health` (checks the database; reports whether realtime i
 - [`docs/VERIFICATION_REPORT.md`](docs/VERIFICATION_REPORT.md) — feature-by-feature test evidence
 - [`docs/DEVICE_TESTING.md`](docs/DEVICE_TESTING.md) — checks that need a real phone and a real road
 - [`docs/api_reference.md`](docs/api_reference.md) — endpoint reference (also `/api/docs`)
+- [`docs/FULL_SYSTEM_AUDIT.md`](docs/FULL_SYSTEM_AUDIT.md) — latest audit: defects fixed, module status, what is not verified
+- [`docs/INVENTORY.md`](docs/INVENTORY.md) — generated list of pages, endpoints and data models
+- [`docs/MOBILE_ANDROID.md`](docs/MOBILE_ANDROID.md) — Android app: build, signing, updates, device test checklist

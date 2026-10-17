@@ -1,5 +1,7 @@
 'use client';
 
+import { SOCKET_EVENTS } from '@/lib/domain/constants';
+import { useRealtimeRefresh } from '@/components/shared/RealtimeProvider';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Navigation, Phone, Search } from 'lucide-react';
@@ -77,6 +79,9 @@ export default function FieldClients() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cacheKey]);
+
+  // Assignments and client changes from the office appear without reopening the page.
+  useRealtimeRefresh(load, [SOCKET_EVENTS.CLIENT_ASSIGNED, SOCKET_EVENTS.CLIENT_CHANGED]);
 
   useEffect(() => {
     load();

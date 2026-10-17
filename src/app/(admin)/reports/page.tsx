@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/components/shared/SessionProvider';
 import { apiFetch } from '@/lib/client/apiFetch';
+import { openDocument } from '@/lib/native/documents';
 
 function ReportsContent() {
   const searchParams = useSearchParams();
@@ -73,7 +74,7 @@ function ReportsContent() {
     if (to) params.append('to', to);
     params.append('format', 'csv');
 
-    window.open(`/api/reports/${activeTab}?${params.toString()}`, '_blank');
+    openDocument(`/api/reports/${activeTab}?${params.toString()}`, `${activeTab}.csv`).catch((e) => alert((e as Error).message));
   };
 
   const rows = reportData?.data || [];

@@ -1,5 +1,7 @@
 'use client';
 
+import { SOCKET_EVENTS } from '@/lib/domain/constants';
+import { useRealtimeRefresh } from '@/components/shared/RealtimeProvider';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useField } from '@/features/field/FieldProvider';
 import { newId } from '@/features/field/storage';
@@ -8,6 +10,7 @@ import { EXPENSE_CATEGORIES } from '@/lib/domain/constants';
 import { Card, Chip, EmptyState, Field, Notice, PrimaryButton, SecondaryButton, Sheet, SkeletonList, StatusPill, inputClass } from '@/components/sales/mobile';
 import FileAttach from '@/components/sales/FileAttach';
 import { formatDate, formatDateTime, humanize, inr } from '@/lib/client/format';
+import DocLink from '@/components/shared/DocLink';
 
 const METHODS = ['UPI', 'CASH', 'PERSONAL_CARD', 'COMPANY_CARD'];
 const FILTERS = ['ALL', 'SUBMITTED', 'APPROVED', 'REIMBURSED', 'REJECTED', 'DRAFT'];
@@ -50,6 +53,8 @@ export default function FieldExpenses() {
       setError(errorMessage(err));
     }
   }, [filter]);
+
+  useRealtimeRefresh(load, [SOCKET_EVENTS.EXPENSE_APPROVED, SOCKET_EVENTS.EXPENSE_REJECTED, SOCKET_EVENTS.EXPENSE_REIMBURSED]);
 
   useEffect(() => {
     load();
@@ -300,9 +305,9 @@ export default function FieldExpenses() {
                 ))}
             </dl>
             {detail.receiptUrl && (
-              <a href={detail.receiptUrl} target="_blank" rel="noopener noreferrer" className="block text-[#259DC3] font-semibold">
+              <DocLink href={detail.receiptUrl} className="block text-[#259DC3] font-semibold">
                 View attached receipt
-              </a>
+              </DocLink>
             )}
             {detail.history?.length > 0 && (
               <div>

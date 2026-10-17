@@ -7,7 +7,9 @@ import Button from '@/components/ui/Button';
 import StatusBadge from '@/components/ui/StatusBadge';
 import { Users, Search, Plus, MapPin, Eye, Phone, Mail, Award, CheckCircle, Clock, X } from 'lucide-react';
 import { useAuth } from '@/components/shared/SessionProvider';
-import { apiFetch } from '@/lib/client/apiFetch';
+import { apiFetch, errorMessage } from '@/lib/client/apiFetch';
+import { useRealtimeRefresh } from '@/components/shared/RealtimeProvider';
+import { SOCKET_EVENTS } from '@/lib/domain/constants';
 
 export default function SalespersonsPage() {
   const { token, user, hasPermission } = useAuth();
@@ -24,6 +26,36 @@ export default function SalespersonsPage() {
   const [territory, setTerritory] = useState('');
   const [password, setPassword] = useState('');
   const [creating, setCreating] = useState(false);
+
+  // End all sessions (lost/shared phone, staff leaving)
+  const [endTarget, setEndTarget] = useState<any | null>(null);
+  const [ending, setEnding] = useState(false);
+  const [endError, setEndError] = useState('');
+  const [endDone, setEndDone] = useState('');
+
+  const handleEndSessions = async () => {
+    if (!endTarget) return;
+    setEnding(true);
+    setEndError('');
+    try {
+      const res = await apiFetch('/api/auth/sessions/revoke', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: endTarget.userId }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setEndError(body.error || 'Could not end the sessions.');
+        return;
+      }
+      setEndDone(`${endTarget.name} has been signed out on every device.`);
+      setEndTarget(null);
+    } catch (err) {
+      setEndError(errorMessage(err));
+    } finally {
+      setEnding(false);
+    }
+  };
 
   const fetchSalespersons = async () => {
     if (!token) return;
@@ -82,6 +114,9 @@ export default function SalespersonsPage() {
     );
   });
 
+  // Live updates (and a refetch after any reconnect / return to the tab).
+  useRealtimeRefresh(fetchSalespersons, [SOCKET_EVENTS.TEAM_CHANGED, SOCKET_EVENTS.ATTENDANCE_CHANGED]);
+
   return (
     <AdminShell title="Sales Force Management">
       <div className="space-y-6 max-w-7xl">
@@ -131,6 +166,10 @@ export default function SalespersonsPage() {
             />
           </div>
         </div>
+
+        {endDone && (
+          <div role="status" className="p-3 bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 rounded-lg">{endDone}</div>
+        )}
 
         {/* Table */}
         <div className="bg-white rounded-xl border border-[#CBD2D7] overflow-hidden">
@@ -201,6 +240,13 @@ export default function SalespersonsPage() {
                           >
                             Stats
                           </Link>
+                          <button
+                            onClick={() => { setEndDone(''); setEndError(''); setEndTarget(sp); }}
+                            title="Sign out on all devices"
+                            className="px-2.5 py-1 rounded-md text-xs font-medium text-rose-700 border border-rose-200 hover:bg-rose-50 transition-colors"
+                          >
+                            Sign out
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -210,6 +256,29 @@ export default function SalespersonsPage() {
             </table>
           </div>
         </div>
+
+        {endTarget && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+            <div role="dialog" aria-label="Sign out on all devices" className="bg-white rounded-2xl border border-[#CBD2D7] w-full max-w-md p-6 space-y-4">
+              <h3 className="text-base font-bold text-rose-700">Sign {endTarget.name} out everywhere?</h3>
+              <p className="text-xs text-[#586570]">
+                Every open session on every phone and browser ends immediately. They can sign in again with their password or a valid access code.
+                Records waiting in their phone&apos;s offline queue stay on the device and sync after they sign in again.
+              </p>
+              {endError && <p role="alert" className="text-xs text-rose-700">{endError}</p>}
+              <div className="flex justify-end gap-3">
+                <Button variant="secondary" onClick={() => setEndTarget(null)}>Cancel</Button>
+                <button
+                  onClick={handleEndSessions}
+                  disabled={ending}
+                  className="px-4 py-2 text-xs font-semibold bg-rose-600 text-white rounded-lg hover:bg-rose-700 disabled:opacity-50"
+                >
+                  {ending ? 'Signing out…' : 'Sign out everywhere'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Add Modal */}
         {showAddModal && (

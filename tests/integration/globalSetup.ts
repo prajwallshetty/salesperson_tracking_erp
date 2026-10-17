@@ -24,6 +24,8 @@ export async function setup() {
     DISABLE_RATE_LIMIT: 'true',
     NODE_ENV: process.env.TEST_SERVER_MODE === 'production' ? 'production' : 'development',
     COOKIE_SECURE: 'false',
+    DEV_QUICK_LOGIN: 'true',
+    SEED_SECOND_TENANT: 'true',
   } as NodeJS.ProcessEnv;
 
   execSync('npx prisma migrate reset --force --skip-seed --skip-generate', { env, stdio: 'inherit' });

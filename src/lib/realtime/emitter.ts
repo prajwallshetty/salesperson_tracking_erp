@@ -1,6 +1,8 @@
 import { randomUUID } from 'crypto';
 import type { Server as SocketIOServer } from 'socket.io';
 import { SOCKET_EVENTS } from '@/lib/domain/constants';
+import { currentTenantId } from '@/lib/db/tenancy';
+import { rooms } from './rooms';
 
 /**
  * Realtime broadcast helpers. The Socket.IO server is created by `server.ts` and stored on
@@ -37,12 +39,16 @@ function emitToTeam(event: string, salespersonId: string | undefined | null, dat
   const io = getIO();
   if (!io) return;
   const envelope = createEnvelope(event, plain(data));
-  if (salespersonId) io.to(`team:${salespersonId}`).to('admins').emit(event, envelope);
-  else io.to('admins').to('managers').emit(event, envelope);
+  const t = currentTenantId(); // always the tenant of the request that produced the change
+  if (salespersonId) io.to(rooms.team(salespersonId)).to(rooms.admins(t)).emit(event, envelope);
+  else io.to(rooms.admins(t)).to(rooms.managers(t)).emit(event, envelope);
 }
 
 export const notifySalespersonLocation = (salespersonId: string, point: unknown) =>
   emitToTeam(SOCKET_EVENTS.LOCATION_UPDATE, salespersonId, { salespersonId, point });
+
+export const notifyTrackingState = (salespersonId: string, state: unknown) =>
+  emitToTeam(SOCKET_EVENTS.TRACKING_STATE, salespersonId, { salespersonId, ...(state as object) });
 
 export const notifyAttendanceChange = (salespersonId: string, attendance: unknown) =>
   emitToTeam(SOCKET_EVENTS.ATTENDANCE_CHANGED, salespersonId, { salespersonId, attendance });
@@ -59,6 +65,33 @@ export const notifyPaymentCollected = (payment: { salespersonId?: string } & Rec
 export const notifyPaymentVerified = (payment: { salespersonId?: string } & Record<string, unknown>) =>
   emitToTeam(SOCKET_EVENTS.PAYMENT_VERIFIED, payment.salespersonId, payment);
 
+/** Tenant-wide broadcast (every connected user of the current company). Payloads are ids only: clients refetch what they may see. */
+function emitToTenant(event: string, data: unknown) {
+  const io = getIO();
+  if (!io) return;
+  io.to(rooms.tenant(currentTenantId())).emit(event, createEnvelope(event, plain(data)));
+}
+
+export const notifyProductChanged = (data: { id?: string; action: 'created' | 'updated' | 'category' }) => emitToTenant(SOCKET_EVENTS.PRODUCT_CHANGED, data);
+export const notifyClientChanged = (data: { id: string; action: 'created' | 'updated' }) => emitToTenant(SOCKET_EVENTS.CLIENT_CHANGED, data);
+export const notifySettingsChanged = (keys: string[]) => emitToTenant(SOCKET_EVENTS.SETTINGS_CHANGED, { keys });
+export const notifyTeamChanged = (data: { salespersonId?: string; managerId?: string | null }) => emitToTenant(SOCKET_EVENTS.TEAM_CHANGED, data);
+
+/** A manager's permissions changed: their open sessions reload them (the server already enforces the new set). */
+export function notifyPermissionsChanged(userId: string) {
+  const io = getIO();
+  if (!io) return;
+  io.to(rooms.user(userId)).emit(SOCKET_EVENTS.PERMISSIONS_CHANGED, createEnvelope(SOCKET_EVENTS.PERMISSIONS_CHANGED, {}));
+}
+
+/**
+ * A manager's open sockets start receiving a newly added team member's room immediately (rooms are
+ * otherwise joined only at connect). Works across instances with the Redis adapter.
+ */
+export function joinManagerToTeam(managerId: string, salespersonId: string) {
+  getIO()?.in(rooms.user(managerId)).socketsJoin(rooms.team(salespersonId));
+}
+
 export const notifyClientAssigned = (salespersonId: string, assignment: unknown) =>
   emitToTeam(SOCKET_EVENTS.CLIENT_ASSIGNED, salespersonId, { salespersonId, assignment });
 
@@ -71,8 +104,9 @@ export function notifyInAppNotification(recipientId: string | null, role: string
   const io = getIO();
   if (!io) return;
   const envelope = createEnvelope(SOCKET_EVENTS.NOTIFICATION_NEW, plain(notification));
-  if (recipientId) io.to(`user:${recipientId}`).emit(SOCKET_EVENTS.NOTIFICATION_NEW, envelope);
-  else if (role === 'SUPER_ADMIN') io.to('admins').emit(SOCKET_EVENTS.NOTIFICATION_NEW, envelope);
-  else if (role === 'MANAGER') io.to('managers').emit(SOCKET_EVENTS.NOTIFICATION_NEW, envelope);
-  else if (role === 'SALESPERSON') io.to('salespersons').emit(SOCKET_EVENTS.NOTIFICATION_NEW, envelope);
+  const t = currentTenantId();
+  if (recipientId) io.to(rooms.user(recipientId)).emit(SOCKET_EVENTS.NOTIFICATION_NEW, envelope);
+  else if (role === 'SUPER_ADMIN') io.to(rooms.admins(t)).emit(SOCKET_EVENTS.NOTIFICATION_NEW, envelope);
+  else if (role === 'MANAGER') io.to(rooms.managers(t)).emit(SOCKET_EVENTS.NOTIFICATION_NEW, envelope);
+  else if (role === 'SALESPERSON') io.to(rooms.salespersons(t)).emit(SOCKET_EVENTS.NOTIFICATION_NEW, envelope);
 }

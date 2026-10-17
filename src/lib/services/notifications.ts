@@ -1,7 +1,7 @@
-import { prisma, Prisma, type Role } from '@/lib/db';
+import { prisma, Prisma, type Role, TxClient } from '@/lib/db';
 import { notifyInAppNotification } from '@/lib/realtime/emitter';
 
-type Client = Prisma.TransactionClient | typeof prisma;
+type Client = TxClient | typeof prisma;
 
 /** Persists an in-app notification and pushes it over the realtime channel. */
 export async function createNotification(

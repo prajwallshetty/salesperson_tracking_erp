@@ -1,5 +1,6 @@
 'use client';
 
+import { SOCKET_EVENTS } from '@/lib/domain/constants';
 import React, { useEffect, useRef, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AdminShell from '@/components/layout/AdminShell';
@@ -27,6 +28,7 @@ import {
 import { useAuth } from '@/components/shared/SessionProvider';
 import { apiFetch } from '@/lib/client/apiFetch';
 import { calculateOrderTotals } from '@/lib/domain';
+import { useRealtimeRefresh } from '@/components/shared/RealtimeProvider';
 
 const ORDER_STEPS = [
   { id: 'client', label: 'Client' },
@@ -226,6 +228,10 @@ function OrdersContent() {
     setOrderNotes('');
     setCreatedOrderResult(null);
   };
+
+  // Live updates (and a refetch after any reconnect / return to the tab).
+  useRealtimeRefresh(fetchOrders, [SOCKET_EVENTS.ORDER_CREATED, SOCKET_EVENTS.ORDER_STATUS_CHANGED]);
+  useRealtimeRefresh(fetchClientsAndProducts, [SOCKET_EVENTS.PRODUCT_CHANGED, SOCKET_EVENTS.CLIENT_CHANGED, SOCKET_EVENTS.CLIENT_ASSIGNED]);
 
   return (
     <AdminShell title="Sales Orders">

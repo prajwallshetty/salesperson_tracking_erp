@@ -6,6 +6,8 @@ import Button from '@/components/ui/Button';
 import { Users, Building2, UserCheck, ArrowRight, ShieldCheck, Clock, X } from 'lucide-react';
 import { useAuth } from '@/components/shared/SessionProvider';
 import { apiFetch } from '@/lib/client/apiFetch';
+import { useRealtimeRefresh } from '@/components/shared/RealtimeProvider';
+import { SOCKET_EVENTS } from '@/lib/domain/constants';
 
 export default function ClientAssignmentsPage() {
   const { token } = useAuth();
@@ -73,6 +75,9 @@ export default function ClientAssignmentsPage() {
       setSubmitting(false);
     }
   };
+
+  // Live updates (and a refetch after any reconnect / return to the tab).
+  useRealtimeRefresh(fetchData, [SOCKET_EVENTS.CLIENT_ASSIGNED, SOCKET_EVENTS.CLIENT_CHANGED, SOCKET_EVENTS.TEAM_CHANGED]);
 
   return (
     <AdminShell title="Territory & Client Assignments">

@@ -7,6 +7,8 @@ import { Settings, Shield, Sliders, Check, Save } from 'lucide-react';
 import { useAuth } from '@/components/shared/SessionProvider';
 import { apiFetch } from '@/lib/client/apiFetch';
 import { DEFAULT_MANAGER_PERMISSIONS } from '@/lib/permissions';
+import { useRealtimeRefresh } from '@/components/shared/RealtimeProvider';
+import { SOCKET_EVENTS } from '@/lib/domain/constants';
 
 export default function SettingsPage() {
   const { token, user, hasPermission } = useAuth();
@@ -77,6 +79,9 @@ export default function SettingsPage() {
       console.error(e);
     }
   };
+
+  // Live updates (and a refetch after any reconnect / return to the tab).
+  useRealtimeRefresh(fetchSettings, [SOCKET_EVENTS.SETTINGS_CHANGED]);
 
   return (
     <AdminShell title="System Configuration">

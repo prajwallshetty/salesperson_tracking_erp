@@ -2,6 +2,7 @@ import { prisma, type Prisma } from '@/lib/db';
 import { authedRoute, json } from '@/lib/http/handler';
 import { getAuthorizedSalespersonIds } from '@/lib/permissions';
 import { formatFreshness } from '@/features/tracking/freshness';
+import { computeLiveState } from '@/features/tracking/liveState';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +26,12 @@ export const GET = authedRoute({ managerPermission: 'canViewGps' }, async ({ use
       const last = s.locationPoints[0];
       const att = s.attendances[0];
       const fresh = formatFreshness(last?.timestamp);
+      const live = computeLiveState({
+        dutyStatus: s.status,
+        lastFixAt: last?.timestamp,
+        deviceState: s.trackingState,
+        deviceStateAt: s.trackingStateAt,
+      });
       return {
         id: s.id,
         salespersonName: s.user.name,
@@ -42,6 +49,14 @@ export const GET = authedRoute({ managerPermission: 'canViewGps' }, async ({ use
         lastUpdate: last?.timestamp ?? null,
         lastUpdateFormatted: fresh.label,
         minutesSinceUpdate: fresh.minutesAgo,
+        // live | stale | unavailable | permission_denied | gps_disabled | off_duty — from the last REAL
+        // accepted fix and what the phone itself reported; never extrapolated.
+        liveState: live.state,
+        liveStateLabel: live.label,
+        backgroundLimited: live.backgroundLimited,
+        deviceTrackingState: s.trackingState ?? null,
+        deviceTrackingStateAt: s.trackingStateAt ?? null,
+        deviceTrackingDetail: s.trackingDetail ?? null,
         loginAt: att?.loginAt ?? null,
         logoutAt: att?.logoutAt ?? null,
       };

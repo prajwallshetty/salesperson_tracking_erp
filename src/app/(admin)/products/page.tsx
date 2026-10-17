@@ -7,6 +7,8 @@ import StatusBadge from '@/components/ui/StatusBadge';
 import { Package, Search, Plus, Tag, AlertCircle, CheckCircle, X } from 'lucide-react';
 import { useAuth } from '@/components/shared/SessionProvider';
 import { apiFetch } from '@/lib/client/apiFetch';
+import { useRealtimeRefresh } from '@/components/shared/RealtimeProvider';
+import { SOCKET_EVENTS } from '@/lib/domain/constants';
 
 export default function ProductsPage() {
   const { token, user, hasPermission } = useAuth();
@@ -81,6 +83,9 @@ export default function ProductsPage() {
       alert(e.message || 'Error creating product');
     }
   };
+
+  // Live updates (and a refetch after any reconnect / return to the tab).
+  useRealtimeRefresh(fetchData, [SOCKET_EVENTS.PRODUCT_CHANGED]);
 
   return (
     <AdminShell title="Product Catalog & Inventory">

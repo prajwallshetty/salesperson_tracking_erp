@@ -3,6 +3,7 @@ import { prisma, Role } from '@/lib/db';
 import { authedRoute, json } from '@/lib/http/handler';
 import { readJson } from '@/lib/http/request';
 import { logAuditEvent, actorFrom } from '@/lib/services/audit';
+import { notifySettingsChanged } from '@/lib/realtime/emitter';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,11 +21,13 @@ export const PUT = authedRoute({ roles: [Role.SUPER_ADMIN] }, async (ctx) => {
   if (!Array.isArray(settings)) return json({ error: 'settings array required' }, 400);
   const parsed = settingsSchema.parse(settings);
 
+  const tenantId = ctx.user.tenantId;
   await prisma.$transaction(
     parsed.map((s) =>
-      prisma.systemSetting.upsert({ where: { key: s.key }, update: { value: String(s.value) }, create: { key: s.key, value: String(s.value) } })
+      prisma.systemSetting.upsert({ where: { tenantId_key: { tenantId, key: s.key } }, update: { value: String(s.value) }, create: { key: s.key, value: String(s.value) } })
     )
   );
   await logAuditEvent({ actor: actorFrom(ctx), action: 'UPDATE_SYSTEM_SETTINGS', module: 'SETTINGS', newValue: parsed });
+  notifySettingsChanged(parsed.map((s) => s.key));
   return json({ message: 'Settings updated successfully' });
 });

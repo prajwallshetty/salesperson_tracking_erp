@@ -21,5 +21,6 @@ export const GET = authedRoute({}, async ({ user }) => {
       dutyStatus: sp?.status,
       permissions: user.permissions,
     },
+    tenant: { slug: user.tenantSlug, name: user.tenantName, activeUntil: user.tenantActiveUntil },
   });
 });

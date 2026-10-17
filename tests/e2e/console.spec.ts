@@ -91,7 +91,7 @@ test.describe('admin console', () => {
   test('admin verifies a pending collection from the console', async ({ page, playwright, baseURL }) => {
     // Salesperson records a collection through the API in a separate session.
     const rep = await playwright.request.newContext({ baseURL });
-    await rep.post('/api/auth/login', { data: { identifier: 'rahul@erp.com', password: 'Password123!' } });
+    await rep.post('/api/auth/login', { data: { company: 'default', identifier: 'rahul@erp.com', password: 'Password123!' } });
     const client = (await (await rep.get('/api/clients')).json()).data[0];
     const created = await rep.post('/api/payments', { data: { clientId: client.id, amount: 1234, paymentMethod: 'UPI', transactionReference: 'UTR-E2E-VERIFY' } });
     const receipt = (await created.json()).data.receiptNumber;
@@ -122,10 +122,45 @@ test.describe('admin console', () => {
   test('logout ends the session and protects pages', async ({ page }) => {
     await login(page, 'admin@erp.com');
     await expect(page).toHaveURL(/\/dashboard/);
-    await page.getByRole('button', { name: 'Sign out' }).click();
+    await page.getByRole('button', { name: 'Sign out', exact: true }).click();
     await expect(page).toHaveURL(/\/login/);
     await page.goto('/orders');
     await expect(page).toHaveURL(/\/login\?next=%2Forders/);
+  });
+
+  test('"sign out of all devices" ends the admin session in other browsers too', async ({ page, browser }) => {
+    const otherCtx = await browser.newContext();
+    const other = await otherCtx.newPage();
+    await login(other, 'admin@erp.com');
+    await login(page, 'admin@erp.com');
+
+    await page.getByRole('button', { name: 'Sign out of all devices' }).click();
+    await page.getByRole('dialog', { name: 'Sign out of all devices' }).getByRole('button', { name: 'Sign out everywhere' }).click();
+    await expect(page).toHaveURL(/\/login/);
+
+    // The other browser still holds a correctly signed cookie; it must land on login, not loop.
+    await other.goto('/orders');
+    await expect(other).toHaveURL(/\/login\?expired=1&next=%2Forders/);
+    await expect(other.getByRole('alert').filter({ hasText: 'Your session has expired' })).toBeVisible();
+    await otherCtx.close();
+  });
+
+  test('admin signs a salesperson out of every device from Sales Force Management', async ({ page, browser }) => {
+    const phoneCtx = await browser.newContext();
+    const phone = await phoneCtx.newPage();
+    await login(phone, 'vishal@erp.com');
+    await expect(phone).toHaveURL(/\/field$/);
+
+    await login(page, 'admin@erp.com');
+    await page.goto('/salespersons');
+    await page.locator('tr', { hasText: 'Vishal Patil' }).getByRole('button', { name: 'Sign out' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Sign out on all devices' });
+    await dialog.getByRole('button', { name: 'Sign out everywhere' }).click();
+    await expect(page.getByRole('status').filter({ hasText: 'Vishal Patil has been signed out on every device.' })).toBeVisible();
+
+    await phone.reload();
+    await expect(phone).toHaveURL(/\/login\?expired=1/);
+    await phoneCtx.close();
   });
 
   test('invalid credentials show an error and stay on login', async ({ page }) => {

@@ -1,11 +1,12 @@
 'use client';
 
+import { SOCKET_EVENTS } from '@/lib/domain/constants';
 import React, { Suspense, useEffect, useState } from 'react';
 import AdminShell from '@/components/layout/AdminShell';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/components/shared/SessionProvider';
 import { apiFetch } from '@/lib/client/apiFetch';
-import { useSocket } from '@/components/shared/RealtimeProvider';
+import { useSocket, useRealtimeRefresh } from '@/components/shared/RealtimeProvider';
 import {
   Receipt,
   CheckCircle2,
@@ -25,6 +26,8 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { EXPENSE_CATEGORIES, EXPENSE_STATUSES } from '@/lib/domain';
+import DocLink from '@/components/shared/DocLink';
+import { saveTextFile } from '@/lib/native/documents';
 
 function ExpensesContent() {
   const { token, user } = useAuth();
@@ -95,13 +98,6 @@ function ExpensesContent() {
   useEffect(() => {
     fetchExpenses();
   }, [token, selectedStatus, selectedCategory]);
-
-  // Real-time socket updates for expenses
-  useEffect(() => {
-    if (lastEvent && lastEvent.eventName.startsWith('EXPENSE_')) {
-      fetchExpenses();
-    }
-  }, [lastEvent]);
 
   // Handler: Approve Claim
   const handleApprove = async () => {
@@ -218,14 +214,9 @@ function ExpensesContent() {
         `"${e.receiptUrl || ''}"`,
       ].join(',')
     );
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers, ...rows].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `staff_expenses_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    saveTextFile([headers, ...rows].join('\n'), `staff_expenses_${new Date().toISOString().slice(0, 10)}.csv`).catch((e) =>
+      alert((e as Error).message)
+    );
   };
 
   // Helper status color badges
@@ -268,6 +259,9 @@ function ExpensesContent() {
         );
     }
   };
+
+  // Live updates (and a refetch after any reconnect / return to the tab).
+  useRealtimeRefresh(fetchExpenses, [SOCKET_EVENTS.EXPENSE_SUBMITTED, SOCKET_EVENTS.EXPENSE_APPROVED, SOCKET_EVENTS.EXPENSE_REJECTED, SOCKET_EVENTS.EXPENSE_REIMBURSED]);
 
   return (
     <AdminShell title="Staff Expense Management">
@@ -581,14 +575,9 @@ function ExpensesContent() {
                       (e.target as HTMLElement).style.display = 'none';
                     }}
                   />
-                  <a
-                    href={inspectExpense.receiptUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-block mt-2 text-xs font-semibold text-[#081224] underline"
-                  >
+                  <DocLink href={inspectExpense.receiptUrl} className="inline-block mt-2 text-xs font-semibold text-[#081224] underline">
                     Open Full Receipt File
-                  </a>
+                  </DocLink>
                 </div>
               ) : (
                 <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-xs text-[#586570] text-center">

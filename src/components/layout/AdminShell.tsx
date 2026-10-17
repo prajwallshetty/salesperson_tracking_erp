@@ -1,6 +1,7 @@
 'use client';
 
-import React, { Suspense, useCallback, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useState } from 'react';
+import { pushOverlay } from '@/lib/client/overlayStack';
 import Sidebar from './Sidebar';
 import Header from './Header';
 
@@ -11,6 +12,8 @@ import Header from './Header';
 export default function AdminShell({ title, children }: { title: string; children: React.ReactNode }) {
   const [navOpen, setNavOpen] = useState(false);
   const close = useCallback(() => setNavOpen(false), []);
+  // Android back button closes the phone navigation drawer first.
+  useEffect(() => (navOpen ? pushOverlay(close) : undefined), [navOpen, close]);
   return (
     <div className="min-h-screen bg-[#F5F7F8]">
       <Suspense fallback={null}>

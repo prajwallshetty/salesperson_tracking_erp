@@ -3,6 +3,7 @@ import { prisma, Role, type Prisma } from '@/lib/db';
 import { authedRoute, json } from '@/lib/http/handler';
 import { pagination, readJson, searchParams } from '@/lib/http/request';
 import { logAuditEvent, actorFrom } from '@/lib/services/audit';
+import { notifyProductChanged } from '@/lib/realtime/emitter';
 
 export const dynamic = 'force-dynamic';
 
@@ -88,5 +89,6 @@ export const POST = authedRoute({ roles: [Role.SUPER_ADMIN, Role.MANAGER], manag
     },
   });
   await logAuditEvent({ actor: actorFrom(ctx), action: 'CREATE_PRODUCT', module: 'PRODUCT', recordId: product.id, newValue: product });
+  notifyProductChanged({ id: product.id, action: 'created' });
   return json({ data: product }, 201);
 });

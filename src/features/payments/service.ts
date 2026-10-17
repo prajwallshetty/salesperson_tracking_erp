@@ -1,4 +1,4 @@
-import { prisma, LedgerEntryType, PaymentStatus, Role } from '@/lib/db';
+import { prisma, LedgerEntryType, PaymentStatus, Role, currentTenantId } from '@/lib/db';
 import { createPaymentSchema, verifyPaymentSchema } from '@/lib/validations/schemas';
 import { badRequest, notFound } from '@/lib/http/errors';
 import { assertSalespersonAccess, getAccessibleClient, resolveActingSalespersonId } from '@/lib/services/access';
@@ -110,7 +110,7 @@ export async function verifyPayment(user: AuthenticatedUser, paymentId: string, 
   const input = verifyPaymentSchema.parse(rawInput);
 
   const payment = await prisma.$transaction(async (tx) => {
-    const locked = await tx.$queryRaw<{ id: string }[]>`SELECT "id" FROM "payments" WHERE "id" = ${paymentId} FOR UPDATE`;
+    const locked = await tx.$queryRaw<{ id: string }[]>`SELECT "id" FROM "payments" WHERE "id" = ${paymentId} AND "tenantId" = ${currentTenantId()} FOR UPDATE`;
     if (!locked.length) throw notFound('Payment not found');
     const p = await tx.payment.findUniqueOrThrow({ where: { id: paymentId }, include: { salesperson: { select: { userId: true } } } });
     assertSalespersonAccess(user, p.salespersonId, 'You can only verify collections for salespersons in your team');

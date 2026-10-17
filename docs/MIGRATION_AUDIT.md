@@ -192,21 +192,24 @@ Legend: ✅ done and verified by automated tests · 🟡 done, partially verifie
 
 ## 9. Known limitations and remaining tasks
 
-1. **Session revocation**: tokens are stateless (7 days). Revoking an access code or changing a password does
-   not end existing sessions; deactivating the user (status `INACTIVE` in the database) does, immediately.
-   There is no UI/endpoint to deactivate users or reset passwords (none existed before). Adding a
-   `tokenVersion` column would need a reviewed schema migration.
-2. **Single instance**: Socket.IO rooms, rate limiting and local-disk uploads are per process (see DEPLOYMENT.md).
+1. ~~Session revocation~~ — **done in Phase 2**: reviewed additive migration adds `users.tokenVersion`;
+   "sign out of all devices" (console sidebar, field profile), admin/manager "Sign out" per salesperson,
+   and "also sign out everywhere" when revoking an access code. Deactivation still ends sessions immediately.
+   There is still no UI/endpoint to deactivate users or reset passwords (none existed before).
+2. ~~Single instance~~ — **Phase 2**: optional `REDIS_URL` shares Socket.IO events and rate limits across
+   instances (tested with two instances). Uploads remain local files: instances must share `UPLOAD_DIR`.
 3. **Background GPS**: browsers stop geolocation when the app is backgrounded/locked; gaps are shown, not filled.
-   If continuous background tracking is a hard requirement, a native wrapper is needed; the API contract the
-   legacy Expo client used is unchanged, so such a client can talk to SalesGrid directly.
+   The Capacitor Android app (`apps/mobile`) adds a native foreground-service tracker, implemented and
+   compiled in CI but **not yet verified on a physical device** (`docs/DEVICE_TESTING.md`).
+   Multi-company support was added afterwards: see `docs/FULL_SYSTEM_AUDIT.md`.
 4. **Stock can go negative** — preserved legacy rule (orders are not blocked by stock); the UI warns.
 5. **Audit logs** are visible to managers company-wide (legacy permission, preserved).
 6. Lint warnings (`exhaustive-deps`) remain in ported console pages; behaviour is intentional and tested.
-7. Uploaded files (`/api/files/<name>`) are readable by any signed-in user who has the URL (legacy behaviour;
-   names are unguessable). Per-record file authorization would need an ownership link in the schema.
-8. `?token=` query authentication is still accepted for legacy receipt/CSV links opened by older clients; the
-   new UI uses the cookie instead. Remove once no legacy clients remain (tokens in URLs can reach logs).
+7. ~~Uploaded files readable by any signed-in user~~ — **Phase 2**: new `uploaded_files` table records the
+   uploader; a file opens only for super admins, its uploader, and users who can access a payment, visit or
+   expense referencing it. Pre-existing files (no row) open through their referencing record only.
+8. ~~`?token=` query authentication~~ — **Phase 2**: off by default; `ALLOW_QUERY_TOKEN=true` restores it for
+   an old client during rollout. The UI never used it.
 9. The seed contains demo data only; it refuses to run in production without `ALLOW_PRODUCTION_SEED=true`.
 10. Real-device verification (`docs/DEVICE_TESTING.md`) and the production cut-over (`docs/DEPLOYMENT.md`) are
    still to be done by the team.

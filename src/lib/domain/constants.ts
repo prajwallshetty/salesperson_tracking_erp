@@ -94,12 +94,18 @@ export const SOCKET_EVENTS = {
   
   // Real-time events
   LOCATION_UPDATE: 'location:update',
+  TRACKING_STATE: 'tracking:state',
   ATTENDANCE_CHANGED: 'attendance:changed',
   ORDER_CREATED: 'order:created',
   ORDER_STATUS_CHANGED: 'order:status_changed',
   PAYMENT_COLLECTED: 'payment:collected',
   PAYMENT_VERIFIED: 'payment:verified',
   CLIENT_ASSIGNED: 'client:assigned',
+  CLIENT_CHANGED: 'client:changed',
+  PRODUCT_CHANGED: 'product:changed',
+  SETTINGS_CHANGED: 'settings:changed',
+  TEAM_CHANGED: 'team:changed',
+  PERMISSIONS_CHANGED: 'permissions:changed',
   EXPENSE_SUBMITTED: 'expense:submitted',
   EXPENSE_APPROVED: 'expense:approved',
   EXPENSE_REJECTED: 'expense:rejected',

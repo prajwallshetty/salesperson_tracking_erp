@@ -35,6 +35,8 @@ export default defineConfig({
       DISABLE_RATE_LIMIT: 'true',
       COOKIE_SECURE: 'false',
       UPLOAD_DIR: './.test-uploads',
+      // Set on purpose: a production server must ignore it (asserted in quick-access.spec.ts).
+      DEV_QUICK_LOGIN: 'true',
     },
   },
 });

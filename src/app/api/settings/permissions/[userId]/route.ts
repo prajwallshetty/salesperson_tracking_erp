@@ -4,6 +4,7 @@ import { authedRoute, json } from '@/lib/http/handler';
 import { readJson } from '@/lib/http/request';
 import { MANAGER_PERMISSION_KEYS } from '@/lib/permissions';
 import { logAuditEvent, actorFrom } from '@/lib/services/audit';
+import { notifyPermissionsChanged } from '@/lib/realtime/emitter';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,5 +20,6 @@ export const PUT = authedRoute<{ userId: string }>({ roles: [Role.SUPER_ADMIN] }
 
   const updated = await prisma.managerPermission.upsert({ where: { userId }, update: perms, create: { userId, ...perms } });
   await logAuditEvent({ actor: actorFrom(ctx), action: 'UPDATE_MANAGER_PERMISSIONS', module: 'PERMISSIONS', recordId: userId, newValue: perms });
+  notifyPermissionsChanged(userId);
   return json({ data: updated });
 });

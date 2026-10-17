@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { getAuthorizedSalespersonIds, hasPermission, hasRole, homePathForRole, scopedSalespersonFilter, type AuthenticatedUser } from '@/lib/permissions';
 
-const base = { id: 'u', name: 'n', email: 'e', phone: 'p', status: 'ACTIVE' };
+const base = { id: 'u', name: 'n', email: 'e', phone: 'p', status: 'ACTIVE', tenantId: 't1', tenantSlug: 'default', tenantName: 'Default', tenantActiveUntil: null };
 const admin: AuthenticatedUser = { ...base, role: 'SUPER_ADMIN' };
 const manager: AuthenticatedUser = { ...base, role: 'MANAGER', managedSalespersonIds: ['a', 'b'] };
 const sp: AuthenticatedUser = { ...base, role: 'SALESPERSON', salespersonId: 'a' };

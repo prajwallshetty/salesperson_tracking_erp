@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma, Role, SalespersonStatus, UserStatus } from '@/lib/db';
 import { badRequest, forbidden, notFound } from '@/lib/http/errors';
 import { logAuditEvent, type AuditActor } from '@/lib/services/audit';
+import { joinManagerToTeam, notifyTeamChanged } from '@/lib/realtime/emitter';
 import type { AuthenticatedUser } from '@/lib/permissions';
 
 const createSalespersonSchema = z.object({
@@ -51,5 +52,8 @@ export async function createSalesperson(user: AuthenticatedUser, body: any, acto
     recordId: result.id,
     newValue: { name: input.name, employeeCode: input.employeeCode, territory: input.territory },
   });
+  // The manager's open sessions follow the new team member at once; admins and managers refresh lists.
+  if (managerId) joinManagerToTeam(managerId, result.id);
+  notifyTeamChanged({ salespersonId: result.id, managerId: managerId ?? null });
   return result;
 }

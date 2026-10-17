@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
-import { SESSION_COOKIE } from '@/lib/auth/constants';
+import { SESSION_COOKIE, PATH_HEADER } from '@/lib/auth/constants';
 
 /**
  * Page-level gatekeeping only. This is a UX layer (redirects); it is NOT the authorization
@@ -97,7 +97,10 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', req.url));
   }
   if (isField && role !== 'SALESPERSON') return NextResponse.redirect(new URL('/dashboard', req.url));
-  return NextResponse.next();
+  // Lets layouts send a revoked session back here after sign-in (see SESSION_ENDED_PATH).
+  const headers = new Headers(req.headers);
+  headers.set(PATH_HEADER, pathname + req.nextUrl.search);
+  return NextResponse.next({ request: { headers } });
 }
 
 export const config = {

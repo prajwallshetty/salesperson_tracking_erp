@@ -19,10 +19,13 @@ const DynamicMap = dynamic(
     const L = (await import('leaflet')).default;
     const { MapContainer, TileLayer, Marker, Popup, Circle, useMap } = await import('react-leaflet');
 
-    const spIcon = (initials: string, online: boolean) =>
+    // live = green · stale = amber · permission/GPS problem = red · off duty / unknown = grey
+    const stateColor = (state?: string) =>
+      state === 'live' ? '#2E6819' : state === 'stale' ? '#B45309' : state === 'permission_denied' || state === 'gps_disabled' ? '#991B1B' : '#80909D';
+    const spIcon = (initials: string, color: string) =>
       L.divIcon({
         className: 'sg-sp-marker',
-        html: `<div style="background:${online ? '#2E6819' : '#80909D'};width:30px;height:30px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;color:#fff;font:700 11px Inter,sans-serif">${escapeHtml(initials)}</div>`,
+        html: `<div style="background:${color};width:30px;height:30px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;color:#fff;font:700 11px Inter,sans-serif">${escapeHtml(initials)}</div>`,
         iconSize: [30, 30],
         iconAnchor: [15, 15],
       });
@@ -62,15 +65,18 @@ const DynamicMap = dynamic(
               const initials = String(s.name || '?').split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
               return (
                 <React.Fragment key={s.salespersonId}>
-                  <Marker position={[loc.latitude, loc.longitude]} icon={spIcon(initials, Boolean(s.isOnline))} zIndexOffset={s.isOnline ? 1000 : 0}>
+                  <Marker position={[loc.latitude, loc.longitude]} icon={spIcon(initials, stateColor(s.liveState))} zIndexOffset={s.liveState === 'live' ? 1000 : 0}>
                     <Popup>
                       <div className="text-xs min-w-[180px]">
                         <p className="font-bold text-sm text-[#0B1320]">
                           {s.name} <span className="font-normal text-[#586570]">({s.employeeCode})</span>
                         </p>
-                        <p className={`mt-0.5 font-semibold ${s.isOnline ? 'text-[#2E6819]' : 'text-[#B45309]'}`}>
-                          {s.isOnline ? 'Live' : s.dutyStatus === 'ON_DUTY' ? 'On duty — signal stale' : 'Off duty — last known position'}
+                        <p className="mt-0.5 font-semibold" style={{ color: stateColor(s.liveState) }}>
+                          {s.liveStateLabel || (s.isOnline ? 'Live' : 'Last known position')}
                         </p>
+                        {s.liveState !== 'live' && (
+                          <p className="text-[11px] text-[#586570]">Last known position — not a current location.</p>
+                        )}
                         <dl className="mt-2 space-y-0.5 text-[11px] text-[#586570]">
                           <div><dt className="inline font-semibold">Last fix: </dt><dd className="inline">{formatAge(loc.timestamp)} · {new Date(loc.timestamp).toLocaleString('en-IN', { timeZone: TZ, dateStyle: 'short', timeStyle: 'short' })}</dd></div>
                           <div><dt className="inline font-semibold">Accuracy: </dt><dd className="inline">{loc.accuracy != null ? `±${Math.round(loc.accuracy)} m` : 'Not reported'}</dd></div>
@@ -85,7 +91,7 @@ const DynamicMap = dynamic(
                     <Circle
                       center={[loc.latitude, loc.longitude]}
                       radius={Math.min(loc.accuracy, 2000)}
-                      pathOptions={{ color: s.isOnline ? '#2E6819' : '#80909D', fillOpacity: 0.12, weight: 1 }}
+                      pathOptions={{ color: stateColor(s.liveState), fillOpacity: 0.12, weight: 1 }}
                     />
                   )}
                 </React.Fragment>

@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import AdminShell from '@/components/layout/AdminShell';
 import StatusBadge from '@/components/ui/StatusBadge';
 import { Calendar, User, Clock, Navigation, MapPin } from 'lucide-react';
 import { useAuth } from '@/components/shared/SessionProvider';
 import { apiFetch } from '@/lib/client/apiFetch';
+import { useRealtimeRefresh } from '@/components/shared/RealtimeProvider';
+import { SOCKET_EVENTS } from '@/lib/domain/constants';
 
 export default function AttendancePage() {
   const { token } = useAuth();
@@ -22,17 +24,23 @@ export default function AttendancePage() {
       .then((json) => setSalespersons(json.data || []));
   }, [token]);
 
+  const loadAttendance = useCallback(
+    (silent = false) => {
+      if (!token) return;
+      if (!silent) setLoading(true);
+      let url = '/api/attendance/history';
+      if (salespersonId) url += `?salespersonId=${salespersonId}`;
+      return apiFetch(url)
+        .then((r) => r.json())
+        .then((json) => setAttendances(json.data || []))
+        .finally(() => setLoading(false));
+    },
+    [token, salespersonId]
+  );
   useEffect(() => {
-    if (!token) return;
-    setLoading(true);
-    let url = '/api/attendance/history';
-    if (salespersonId) url += `?salespersonId=${salespersonId}`;
-
-    apiFetch(url)
-      .then((r) => r.json())
-      .then((json) => setAttendances(json.data || []))
-      .finally(() => setLoading(false));
-  }, [token, salespersonId]);
+    loadAttendance();
+  }, [loadAttendance]);
+  useRealtimeRefresh(() => loadAttendance(true), [SOCKET_EVENTS.ATTENDANCE_CHANGED]);
 
   return (
     <AdminShell title="Attendance & Shift Logs">

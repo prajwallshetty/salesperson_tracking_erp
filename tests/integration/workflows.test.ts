@@ -109,7 +109,7 @@ describe('field sales lifecycle', () => {
   });
 
   it('creates an order with exact GST arithmetic, deducts stock and posts the invoice', async () => {
-    const stockBefore = (await db.product.findUnique({ where: { sku: 'SAM-CHG-01' } }))!.stock;
+    const stockBefore = (await db.product.findFirst({ where: { sku: 'SAM-CHG-01', tenant: { slug: 'default' } } }))!.stock;
     const key = `order-${uid()}`;
     const body = {
       clientId: client.id,
@@ -139,7 +139,7 @@ describe('field sales lifecycle', () => {
     expect(replay.json.data.id).toBe(orderId);
     expect(await db.order.count({ where: { notes: 'Festival order' } })).toBe(1);
 
-    expect((await db.product.findUnique({ where: { sku: 'SAM-CHG-01' } }))!.stock).toBe(stockBefore - 10);
+    expect((await db.product.findFirst({ where: { sku: 'SAM-CHG-01', tenant: { slug: 'default' } } }))!.stock).toBe(stockBefore - 10);
     const c = await db.client.findUnique({ where: { id: client.id } });
     expect(Number(c!.currentOutstanding)).toBe(outstandingBefore + 7788);
     const ledger = await db.clientLedgerEntry.findFirst({ where: { orderId, entryType: 'INVOICE' } });
@@ -178,7 +178,10 @@ describe('field sales lifecycle', () => {
   });
 
   it('serves the PDF receipt to its owner and admins only', async () => {
-    const own = await fetch(`${process.env.TEST_BASE_URL}/api/payments/${paymentId}/receipt-pdf?token=${vishal.token}`);
+    // `?token=` links are off by default (ALLOW_QUERY_TOKEN); browsers open the PDF with the cookie.
+    const viaQuery = await fetch(`${process.env.TEST_BASE_URL}/api/payments/${paymentId}/receipt-pdf?token=${vishal.token}`);
+    expect(viaQuery.status).toBe(401);
+    const own = await fetch(`${process.env.TEST_BASE_URL}/api/payments/${paymentId}/receipt-pdf`, { headers: { Cookie: vishal.cookie } });
     expect(own.status).toBe(200);
     expect(own.headers.get('content-type')).toBe('application/pdf');
     expect(Buffer.from(await own.arrayBuffer()).subarray(0, 5).toString()).toBe('%PDF-');
@@ -187,7 +190,7 @@ describe('field sales lifecycle', () => {
   });
 
   it('order status workflow posts and reverses the invoice exactly once', async () => {
-    const stock = async () => (await db.product.findUnique({ where: { sku: 'SAM-CHG-01' } }))!.stock;
+    const stock = async () => (await db.product.findFirst({ where: { sku: 'SAM-CHG-01', tenant: { slug: 'default' } } }))!.stock;
     const invoices = () => db.clientLedgerEntry.count({ where: { orderId, entryType: 'INVOICE' } });
     const stockAtConfirm = await stock();
 
@@ -317,7 +320,7 @@ describe('client & catalogue management', () => {
       body: { name: 'New Rep', email: `rep${tag}@erp.com`, phone: `8${String(Date.now()).slice(-9)}`, password: 'Welcome@2026', employeeCode: `EMP-${tag}`, territory: 'Udupi' },
     });
     expect(r.status).toBe(201);
-    const l = await api('/api/auth/login', { body: { identifier: `EMP-${tag}`, password: 'Welcome@2026' } });
+    const l = await api('/api/auth/login', { body: { company: 'default', identifier: `EMP-${tag}`, password: 'Welcome@2026' } });
     expect(l.status).toBe(200);
     expect(l.json.user.role).toBe('SALESPERSON');
   });

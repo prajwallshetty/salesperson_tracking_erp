@@ -3,6 +3,7 @@ import { revokeAccessCodeSchema } from '@/lib/validations/schemas';
 import { authedRoute, json } from '@/lib/http/handler';
 import { readJson } from '@/lib/http/request';
 import { logAuditEvent, actorFrom } from '@/lib/services/audit';
+import { revokeUserSessions } from '@/lib/services/sessions';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,7 +11,13 @@ export const POST = authedRoute({ roles: [Role.SUPER_ADMIN, Role.MANAGER] }, asy
   const { user } = ctx;
   const parsed = revokeAccessCodeSchema.safeParse(await readJson(ctx.req));
   if (!parsed.success || (!parsed.data.codeId && !parsed.data.userId)) return json({ error: 'Valid codeId or userId is required' }, 400);
-  const { codeId, userId } = parsed.data;
+  const { codeId, userId, endSessions } = parsed.data;
+
+  // Team scope is decided before anything about the target is revealed (no 404-vs-403 probing).
+  if (userId && !codeId && user.role === Role.MANAGER) {
+    const inTeam = await prisma.managerSalesperson.findFirst({ where: { managerId: user.id, salesperson: { userId } } });
+    if (!inTeam) return json({ error: 'Unauthorized to revoke access codes for this user.' }, 403);
+  }
 
   const target = codeId
     ? await prisma.userAccessCode.findUnique({ where: { id: codeId } })
@@ -24,5 +31,9 @@ export const POST = authedRoute({ roles: [Role.SUPER_ADMIN, Role.MANAGER] }, asy
 
   await prisma.userAccessCode.update({ where: { id: target.id }, data: { status: 'REVOKED', revokedAt: new Date(), revokedById: user.id } });
   await logAuditEvent({ actor: actorFrom(ctx), action: 'REVOKE_ACCESS_CODE', module: 'AUTH', recordId: target.id, newValue: { status: 'REVOKED' } });
-  return json({ message: 'Access code revoked successfully' });
+  if (endSessions) {
+    await revokeUserSessions(target.userId, actorFrom(ctx), 'access code revoked');
+    return json({ message: 'Access code revoked and all sessions ended', sessionsEnded: true });
+  }
+  return json({ message: 'Access code revoked successfully', sessionsEnded: false });
 });

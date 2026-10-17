@@ -27,8 +27,9 @@ export async function api(path: string, opts: { method?: string; token?: string;
   return { status: res.status, json, headers: res.headers, text };
 }
 
-export async function login(identifier: string, password = 'Password123!'): Promise<Session> {
-  const r = await api('/api/auth/login', { body: { identifier, password } });
+/** Signs in to a company (default: the original company, code `default`). */
+export async function login(identifier: string, password = 'Password123!', company = 'default'): Promise<Session> {
+  const r = await api('/api/auth/login', { body: { company, identifier, password } });
   if (r.status !== 200) throw new Error(`login ${identifier} failed: ${r.status} ${JSON.stringify(r.json)}`);
   const setCookie = r.headers.get('set-cookie') || '';
   return { token: r.json.token, user: r.json.user, cookie: setCookie.split(';')[0] };

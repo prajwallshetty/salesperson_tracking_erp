@@ -1,8 +1,14 @@
 import { PrismaClient, Role, UserStatus, SalespersonStatus, AttendanceStatus, OrderStatus, PaymentMethod, PaymentStatus, VisitOutcome, LedgerEntryType } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { businessDateValue } from '../src/lib/time';
+import { createTenantClient, runWithTenant, DEFAULT_TENANT_ID } from '../src/lib/db/tenancy';
 
-const prisma = new PrismaClient();
+const root = new PrismaClient();
+// All seeding goes through the tenant-scoped client inside runWithTenant(): rows are stamped with
+// the tenant being seeded, and unique lookups are per company.
+const prisma = createTenantClient(root);
+const T = DEFAULT_TENANT_ID;
+const SECOND_TENANT_ID = '00000000-0000-0000-0000-000000000002';
 
 /**
  * Development/demo seed. Idempotent (upserts) and REFUSES to run against production unless
@@ -11,10 +17,7 @@ const prisma = new PrismaClient();
  */
 const SEEDED_EXPENSE_NUMBERS = ['EXP-2026-001', 'EXP-2026-002', 'EXP-2026-003', 'EXP-2026-004'];
 
-async function main() {
-  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_PRODUCTION_SEED !== 'true') {
-    throw new Error('Refusing to seed a production database. Set ALLOW_PRODUCTION_SEED=true to override.');
-  }
+async function seedDefaultTenant() {
   console.log('🌱 Starting database seed...');
 
   // 1. System Settings
@@ -28,7 +31,7 @@ async function main() {
 
   for (const s of settings) {
     await prisma.systemSetting.upsert({
-      where: { key: s.key },
+      where: { tenantId_key: { tenantId: T, key: s.key } },
       update: { value: s.value, description: s.description },
       create: s,
     });
@@ -39,7 +42,7 @@ async function main() {
 
   // Super Admin
   const adminUser = await prisma.user.upsert({
-    where: { email: 'admin@erp.com' },
+    where: { tenantId_email: { tenantId: T, email: 'admin@erp.com' } },
     update: {},
     create: {
       name: 'Vikram Mehta',
@@ -53,7 +56,7 @@ async function main() {
 
   // Manager
   const managerUser = await prisma.user.upsert({
-    where: { email: 'manager@erp.com' },
+    where: { tenantId_email: { tenantId: T, email: 'manager@erp.com' } },
     update: {},
     create: {
       name: 'Priya Sundaram',
@@ -83,7 +86,7 @@ async function main() {
 
   // Salesperson 1: Rahul
   const rahulUser = await prisma.user.upsert({
-    where: { email: 'rahul@erp.com' },
+    where: { tenantId_email: { tenantId: T, email: 'rahul@erp.com' } },
     update: {},
     create: {
       name: 'Rahul Sharma',
@@ -106,7 +109,7 @@ async function main() {
 
   // Salesperson 2: Ahmed
   const ahmedUser = await prisma.user.upsert({
-    where: { email: 'ahmed@erp.com' },
+    where: { tenantId_email: { tenantId: T, email: 'ahmed@erp.com' } },
     update: {},
     create: {
       name: 'Ahmed Khan',
@@ -129,7 +132,7 @@ async function main() {
 
   // Salesperson 3: Vishal
   const vishalUser = await prisma.user.upsert({
-    where: { email: 'vishal@erp.com' },
+    where: { tenantId_email: { tenantId: T, email: 'vishal@erp.com' } },
     update: {},
     create: {
       name: 'Vishal Patil',
@@ -185,19 +188,19 @@ async function main() {
 
   // 3. Product Categories & Products
   const catMobile = await prisma.category.upsert({
-    where: { name: 'Mobile Accessories' },
+    where: { tenantId_name: { tenantId: T, name: 'Mobile Accessories' } },
     update: {},
     create: { name: 'Mobile Accessories', description: 'Chargers, cables, audio, and phone peripherals' },
   });
 
   const catPower = await prisma.category.upsert({
-    where: { name: 'Power & Storage' },
+    where: { tenantId_name: { tenantId: T, name: 'Power & Storage' } },
     update: {},
     create: { name: 'Power & Storage', description: 'Power banks, adapters, and backup storage' },
   });
 
   const catWearables = await prisma.category.upsert({
-    where: { name: 'Wearables' },
+    where: { tenantId_name: { tenantId: T, name: 'Wearables' } },
     update: {},
     create: { name: 'Wearables', description: 'Smartwatches, fitness bands, and trackers' },
   });
@@ -297,7 +300,7 @@ async function main() {
 
   for (const p of productsData) {
     await prisma.product.upsert({
-      where: { sku: p.sku },
+      where: { tenantId_sku: { tenantId: T, sku: p.sku } },
       update: p,
       create: p,
     });
@@ -498,11 +501,11 @@ async function main() {
   // Taxable = 6,600
   // Tax (18%) = 1,188
   // Grand Total = 7,788
-  const p1 = await prisma.product.findUnique({ where: { sku: 'SAM-CHG-01' } });
-  const p2 = await prisma.product.findUnique({ where: { sku: 'SAM-CBL-02' } });
-  const p3 = await prisma.product.findUnique({ where: { sku: 'SAM-ADP-03' } });
+  const p1 = await prisma.product.findFirst({ where: { sku: 'SAM-CHG-01' } });
+  const p2 = await prisma.product.findFirst({ where: { sku: 'SAM-CBL-02' } });
+  const p3 = await prisma.product.findFirst({ where: { sku: 'SAM-ADP-03' } });
 
-  const existingOrder = await prisma.order.findUnique({ where: { orderNumber: 'ORD-2026-000001' } });
+  const existingOrder = await prisma.order.findFirst({ where: { orderNumber: 'ORD-2026-000001' } });
   let order1 = existingOrder;
   if (!order1 && p1 && p2 && p3) {
     order1 = await prisma.order.create({
@@ -570,7 +573,7 @@ async function main() {
   }
 
   // 9. Payment Collection
-  const existingPayment = await prisma.payment.findUnique({ where: { receiptNumber: 'PAY-2026-00045' } });
+  const existingPayment = await prisma.payment.findFirst({ where: { receiptNumber: 'PAY-2026-00045' } });
   if (!existingPayment) {
     const payment = await prisma.payment.create({
       data: {
@@ -776,11 +779,93 @@ async function main() {
   console.log('💳 Seeded 4 Staff Expenses: SUBMITTED (₹450), APPROVED (₹180), REIMBURSED (₹320), REJECTED (₹1,200)');
 }
 
+/**
+ * Optional second company (SEED_SECOND_TENANT=true), used by the isolation tests and for trying
+ * multi-company sign-in locally. It deliberately reuses the first company's emails, employee codes,
+ * SKUs and category names to prove they are per-company.
+ */
+async function seedSecondTenant() {
+  const t = SECOND_TENANT_ID;
+  await root.tenant.upsert({ where: { id: t }, update: {}, create: { id: t, slug: 'globex', name: 'Globex Traders' } });
+  await runWithTenant(t, async () => {
+    const passwordHash = await bcrypt.hash('GlobexPass123!', 10);
+    const key = { tenantId: t };
+    await prisma.systemSetting.upsert({
+      where: { tenantId_key: { ...key, key: 'visit_radius_meters' } },
+      update: {},
+      create: { key: 'visit_radius_meters', value: '100', description: 'Visit radius' },
+    });
+    const admin = await prisma.user.upsert({
+      where: { tenantId_email: { ...key, email: 'admin@erp.com' } },
+      update: {},
+      create: { name: 'Globex Admin', email: 'admin@erp.com', phone: '9000000001', passwordHash, role: Role.SUPER_ADMIN, status: UserStatus.ACTIVE },
+    });
+    const manager = await prisma.user.upsert({
+      where: { tenantId_email: { ...key, email: 'manager@erp.com' } },
+      update: {},
+      create: { name: 'Globex Manager', email: 'manager@erp.com', phone: '9000000004', passwordHash, role: Role.MANAGER, status: UserStatus.ACTIVE },
+    });
+    await prisma.managerPermission.upsert({ where: { userId: manager.id }, update: {}, create: { userId: manager.id } });
+    const gita = await prisma.user.upsert({
+      where: { tenantId_email: { ...key, email: 'rahul@erp.com' } }, // same email as the first company's Rahul
+      update: {},
+      create: {
+        name: 'Gita Rao', email: 'rahul@erp.com', phone: '9000000002', passwordHash, role: Role.SALESPERSON, status: UserStatus.ACTIVE,
+        salespersonProfile: { create: { employeeCode: 'EMP-001', territory: 'Globex West', status: SalespersonStatus.OFF_DUTY } },
+      },
+      include: { salespersonProfile: true },
+    });
+    const hari = await prisma.user.upsert({
+      where: { tenantId_email: { ...key, email: 'hari@globex.test' } },
+      update: {},
+      create: {
+        name: 'Hari Das', email: 'hari@globex.test', phone: '9000000003', passwordHash, role: Role.SALESPERSON, status: UserStatus.ACTIVE,
+        salespersonProfile: { create: { employeeCode: 'EMP-002', territory: 'Globex East', status: SalespersonStatus.OFF_DUTY } },
+      },
+      include: { salespersonProfile: true },
+    });
+    await prisma.managerSalesperson.upsert({
+      where: { managerId_salespersonId: { managerId: manager.id, salespersonId: gita.salespersonProfile!.id } },
+      update: {},
+      create: { managerId: manager.id, salespersonId: gita.salespersonProfile!.id },
+    });
+    // Demo access code for Gita (development seed only).
+    await prisma.userAccessCode.deleteMany({ where: { userId: gita.id } });
+    await prisma.userAccessCode.create({ data: { userId: gita.id, codeHash: await bcrypt.hash('GLOBEX1234', 10), displayHint: '•••• 1234', status: 'ACTIVE', createdById: admin.id } });
+
+    const cat = await prisma.category.upsert({ where: { tenantId_name: { ...key, name: 'Mobile Accessories' } }, update: {}, create: { name: 'Mobile Accessories' } });
+    await prisma.product.upsert({
+      where: { tenantId_sku: { ...key, sku: 'SAM-CHG-01' } }, // same SKU as the first company's charger
+      update: {},
+      create: { sku: 'SAM-CHG-01', barcode: '990123450001', name: 'Globex Fast Charger', categoryId: cat.id, brand: 'Globex', unit: 'PCS', sellingPrice: 500, mrp: 650, taxRate: 18, discount: 0, stock: 50, minimumStock: 5 },
+    });
+    const clientBase = { contactPerson: 'Globex Contact', address: '1 Market Road', city: 'Pune', state: 'Maharashtra', pincode: '411001', latitude: 18.5204, longitude: 73.8567, category: 'Retail Store', creditLimit: 50000, paymentTerms: 'Net 30', openingBalance: 0, currentOutstanding: 0 };
+    for (const [name, phone, sp] of [['Globex Retail One', '9000011111', gita], ['Globex Retail Two', '9000022222', hari]] as const) {
+      let c = await prisma.client.findFirst({ where: { phone } });
+      if (!c) {
+        c = await prisma.client.create({ data: { ...clientBase, name, phone } });
+        await prisma.clientAssignment.create({ data: { clientId: c.id, salespersonId: sp.salespersonProfile!.id, assignedBy: admin.id, active: true, type: 'PRIMARY' } });
+      }
+    }
+  });
+  console.log('✅ Second company seeded: code "globex" (admin@erp.com / GlobexPass123!, access code EMP-001 + GLOBEX1234)');
+}
+
+async function main() {
+  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_PRODUCTION_SEED !== 'true') {
+    throw new Error('Refusing to seed a production database. Set ALLOW_PRODUCTION_SEED=true to override.');
+  }
+  // The default tenant normally exists from the migration; create it for a database built another way.
+  await root.tenant.upsert({ where: { id: T }, update: {}, create: { id: T, slug: 'default', name: 'Demo Company' } });
+  await runWithTenant(T, seedDefaultTenant);
+  if (process.env.SEED_SECOND_TENANT === 'true') await seedSecondTenant();
+}
+
 main()
   .catch((e) => {
     console.error('❌ Seed error:', e);
     process.exit(1);
   })
   .finally(async () => {
-    await prisma.$disconnect();
+    await root.$disconnect();
   });

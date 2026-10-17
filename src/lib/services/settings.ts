@@ -2,7 +2,7 @@ import { prisma } from '@/lib/db';
 import { DEFAULT_CONFIG } from '@/lib/domain/constants';
 
 export async function getSetting(key: string): Promise<string | null> {
-  const s = await prisma.systemSetting.findUnique({ where: { key } });
+  const s = await prisma.systemSetting.findFirst({ where: { key } });
   return s?.value ?? null;
 }
 

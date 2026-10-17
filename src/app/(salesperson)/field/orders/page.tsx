@@ -1,5 +1,7 @@
 'use client';
 
+import { SOCKET_EVENTS } from '@/lib/domain/constants';
+import { useRealtimeRefresh } from '@/components/shared/RealtimeProvider';
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Minus, Plus, Search } from 'lucide-react';
@@ -61,6 +63,10 @@ function OrdersInner() {
       }
     }
   }, [cacheKey]);
+
+  // Office-side changes: order approvals, new/changed products, client assignments.
+  useRealtimeRefresh(loadOrders, [SOCKET_EVENTS.ORDER_STATUS_CHANGED]);
+  useRealtimeRefresh(loadCatalogue, [SOCKET_EVENTS.PRODUCT_CHANGED, SOCKET_EVENTS.CLIENT_ASSIGNED, SOCKET_EVENTS.CLIENT_CHANGED]);
 
   useEffect(() => {
     loadOrders();
