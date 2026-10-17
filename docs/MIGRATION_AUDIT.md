@@ -199,8 +199,9 @@ Legend: ✅ done and verified by automated tests · 🟡 done, partially verifie
 2. ~~Single instance~~ — **Phase 2**: optional `REDIS_URL` shares Socket.IO events and rate limits across
    instances (tested with two instances). Uploads remain local files: instances must share `UPLOAD_DIR`.
 3. **Background GPS**: browsers stop geolocation when the app is backgrounded/locked; gaps are shown, not filled.
-   If continuous background tracking is a hard requirement, a native wrapper is needed; the API contract the
-   legacy Expo client used is unchanged, so such a client can talk to SalesGrid directly.
+   The Capacitor Android app (`apps/mobile`) adds a native foreground-service tracker, implemented and
+   compiled in CI but **not yet verified on a physical device** (`docs/DEVICE_TESTING.md`).
+   Multi-company support was added afterwards: see `docs/FULL_SYSTEM_AUDIT.md`.
 4. **Stock can go negative** — preserved legacy rule (orders are not blocked by stock); the UI warns.
 5. **Audit logs** are visible to managers company-wide (legacy permission, preserved).
 6. Lint warnings (`exhaustive-deps`) remain in ported console pages; behaviour is intentional and tested.

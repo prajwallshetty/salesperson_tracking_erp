@@ -20,6 +20,8 @@ export const openApiSpec = {
     '/api/auth/refresh': { post: op('Renew the session token (sliding expiry)') },
     '/api/auth/dev-login': { get: op('Development only (404 in production): accounts for quick login'), post: op('Development only: sign in as { userId }') },
     '/api/app/config': { get: op('Android app settings (minimum native build, update URL)') },
+    '/api/auth/login-config': { get: op('Whether the sign-in form must ask for a company code (several companies exist)') },
+    '/api/location/status': { post: op('Salesperson phone reports its own tracking capability: { state: TRACKING | PERMISSION_DENIED | BACKGROUND_DENIED | GPS_DISABLED | STOPPED, detail? }') },
     '/api/auth/logout-all': { post: op('Sign out of all devices (ends every session of the caller)') },
     '/api/auth/sessions/revoke': { post: op('End every session of a user { userId } (super admin, or the salesperson’s manager)') },
     '/api/auth/session-ended': { get: op('Clear an invalid session cookie and redirect to /login?expired=1') },

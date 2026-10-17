@@ -50,17 +50,25 @@ npm run dev                     # http://localhost:3000 (Next.js + Socket.IO)
 
 Seeded demo accounts (password `Password123!`): `admin@erp.com`, `manager@erp.com`,
 `rahul@erp.com` (or `EMP-001` / access code `RAHUL12345`), `ahmed@erp.com`, `vishal@erp.com`.
+Every account belongs to a **company** (tenant); the seed creates one, `default`. When more than one company
+exists, sign-in also asks for the company code. Manage companies with `npm run tenant -- --help`
+(create, list, suspend, set expiry, rename). Data of different companies is isolated by a tenant-scoped
+database client (see `docs/ARCHITECTURE.md`).
 Set `DEV_QUICK_LOGIN=true` for one-tap sign-in buttons on the login page (development only — ignored in
 production, and no passwords are sent to the browser).
 
 > `npm run dev:next` runs plain `next dev` without the custom server: everything works except realtime
 > push (pages fall back to polling).
 
+`npm run inventory` regenerates `docs/INVENTORY.md` (all pages, endpoints, models) from the code; a test fails if it is stale.
+Optional `LOCATION_RETENTION_DAYS` deletes old GPS points (off by default).
+
 ## Database & migrations
 
 - `prisma/migrations/0_init` is a baseline generated from the legacy schema and verified to produce a schema
-  identical to the legacy `prisma db push`. `1_session_revocation_and_file_ownership` is the only change
-  since: additive (`users.tokenVersion`, `uploaded_files`), reviewed, applied by `prisma migrate deploy`.
+  identical to the legacy `prisma db push`. Later migrations are additive and reviewed: `1_session_revocation_and_file_ownership`,
+  `2_multi_tenancy` (adds `tenants`, `tenantId` columns, per-company unique keys; existing rows move into a default company),
+  `3_tracking_device_state`. All are applied by `prisma migrate deploy`.
 - **Existing database (created by `db push`)** — mark the baseline as applied once (no SQL is executed),
   then apply the later migrations:
   ```bash
@@ -109,4 +117,6 @@ set `REDIS_URL` and share `UPLOAD_DIR` (see DEPLOYMENT.md).
 - [`docs/VERIFICATION_REPORT.md`](docs/VERIFICATION_REPORT.md) — feature-by-feature test evidence
 - [`docs/DEVICE_TESTING.md`](docs/DEVICE_TESTING.md) — checks that need a real phone and a real road
 - [`docs/api_reference.md`](docs/api_reference.md) — endpoint reference (also `/api/docs`)
+- [`docs/FULL_SYSTEM_AUDIT.md`](docs/FULL_SYSTEM_AUDIT.md) — latest audit: defects fixed, module status, what is not verified
+- [`docs/INVENTORY.md`](docs/INVENTORY.md) — generated list of pages, endpoints and data models
 - [`docs/MOBILE_ANDROID.md`](docs/MOBILE_ANDROID.md) — Android app: build, signing, updates, device test checklist

@@ -10,17 +10,18 @@ Environment: Node 22, PostgreSQL 16 (local), Chromium 141 via Playwright 1.56.1.
 | TypeScript (`tsc --noEmit`, strict) | ✅ 0 errors | `npm run typecheck` |
 | Lint (`next lint`) | ✅ 0 errors, 20 warnings | all warnings are `react-hooks/exhaustive-deps` in ported legacy console pages |
 | Production build (`next build`) | ✅ | 60 API route handlers (+ `/health` alias), 31 pages, middleware |
-| Unit tests | ✅ 32 / 32 | `tests/unit` (7 files) |
-| API integration tests (real PostgreSQL, real server) | ✅ 94 / 94 | `tests/integration` (11 files) |
+| Unit tests | ✅ 58 / 58 | `tests/unit` |
+| API integration tests (real PostgreSQL, real server, two companies seeded) | ✅ 136 / 136 | `tests/integration` |
 | Multi-instance (2 production servers + Redis) | ✅ 5 / 5 | `tests/multi-instance` |
-| End-to-end (production build, Playwright) | ✅ 29 / 29 | `tests/e2e` — desktop console + Pixel 7 field app |
+| End-to-end (production build, Playwright) | ✅ 33 / 33 | `tests/e2e` — desktop console + Pixel 7 field app + live map |
 | Baseline migration ≡ legacy `db push` schema | ✅ | `prisma migrate diff` between both databases: empty |
 | Migrations ≡ `schema.prisma` (no drift) | ✅ | `prisma migrate diff --from-migrations … --to-schema-datamodel … --exit-code` → 0 |
 | Phase 2 migration on a populated, baselined database | ✅ | dev database: `migrate deploy` applied `1_session_revocation_and_file_ownership`; row counts of users/orders/payments/ledger/expenses unchanged; all users `tokenVersion` 0; `check:env` OK afterwards (it reported the pending migration before) |
 | Docker image build + run | ✅ (with sandbox caveat) | Image built; container applied migrations to an empty DB, `/api/health` healthy, Docker HEALTHCHECK healthy, cookie session accepted by middleware with runtime `JWT_SECRET`, seed refused in production. Sandbox build used `node:22-bookworm` instead of `-slim` because the sandbox proxy blocks plain-HTTP Debian mirrors (`apt-get`). |
 | Render deployment | ⏸ not performed | No Render access from this environment; `render.yaml` reviewed only. |
 | Real-device GPS / camera / installed PWA | ⏸ not performed | Emulated geolocation only. See `docs/DEVICE_TESTING.md`. |
-| Android APK build | ⏸ not performed here | The Android SDK download host (`dl.google.com`) is blocked in this environment. Project generated with `cap add android`; plugins wired; build runs in `.github/workflows/android.yml`. |
+| Android APK build | ✅ in CI (run #4); ⏸ no installable artifact | Debug build compiles in GitHub Actions. An APK is only published once `SALESGRID_SERVER_URL` (HTTPS) is set; a signed release needs keystore secrets. Local SDK download is blocked here. |
+| Migrations 2 and 3 on a populated database | ✅ | rehearsed on a clone with data: row counts unchanged, existing rows in the default company, no drift |
 | Android app on a physical device | ⏸ not performed | Checklist in `docs/MOBILE_ANDROID.md` §8. |
 | Production bundle free of seed credentials | ✅ | `grep` of `.next/static` and `.next/server` for the seed password/access code: no match; integration test scans the login page and all its scripts |
 
@@ -67,13 +68,18 @@ Legend: **I** = integration test (HTTP against real server + DB assertions) · *
 | **Quick access** — auto-open & sign-out | Valid session on `/login` or `/` opens `/dashboard` (admin/manager) or `/field` (salesperson); sign-out removes the cookie; only the sign-in name is remembered (no password/token in localStorage); *Not you?* forgets it | E |
 | **Quick access** — dev quick login | Development + `DEV_QUICK_LOGIN=true`: lists active accounts without credential fields, issues a normal session, role permissions still enforced, deactivated users refused, audited; production build with the variable set: buttons hidden, endpoint 404 | U, I, E |
 | **Android shell** — logic | Back button (close sheet → back → minimise on home screens), biometric lock timing, update-required gate | U |
+| **Companies** — isolation | Every list/detail/write endpoint, files, settings, audit logs, reports, document numbers, idempotency keys and socket rooms: company B's token cannot read, change or learn the existence of company A's records; client-supplied tenant/role ignored; suspended/expired company refused at sign-in and on every call | I `tenancy` (15), U `tenancy`, `tenancy-guard` |
+| **Companies** — sign-in | Company code required when several exist; same email/phone/employee code in two companies resolves by company; ambiguity inside one company refused; uniform failures; per-IP and per-account throttle | I, U `loginTenant` |
+| **Access codes** | Issued for one employee, returns company code; login needs company + code; expiry, revoke, 5-attempt lock, regenerate; cross-company use fails; revoke ends sessions | I `accessCodes` |
+| **GPS pipeline** | Timestamp-ordered ingest, dedupe, out-of-order batches, flags, 500-point cap, no stale point moves the live position, accepted-only segments, documented distance method, session quality labels, retention, device-reported states, live/stale/unavailable/denied classification | I `gps` (14), U `tracking` |
+| **Realtime** | Events for orders, payments, clients, products, expenses, attendance, settings, team; tenant-scoped rooms; manager gets new team members' events; missed events reconciled after reconnect | I `realtime-sync`, E `realtime-live` |
 | **Phase 2** — multi-instance | GPS fix posted to instance A reaches a dashboard socket on instance B; sign-out on A drops the socket on B; login rate limit counted across both; Redis killed → health 200 with `"redis": "down"`, logins still served | multi-instance |
 
 ## Not verified here (and why)
 
 | Item | Reason | Next step |
 |---|---|---|
-| Real-device GPS accuracy, background/lock-screen gaps, Wake Lock | Needs physical device | `docs/DEVICE_TESTING.md` |
+| Real-device GPS accuracy, **native background tracking / foreground service**, permissions, battery behaviour, camera, biometrics, share sheet | Needs physical Android device | `docs/DEVICE_TESTING.md` |
 | Map tiles | OpenStreetMap tiles blocked by this sandbox's network policy (map container renders grey) | Check once deployed |
 | Production deployment, DNS, TLS, Render disk | No deployment access | Follow `docs/DEPLOYMENT.md` cut-over |
 | Load beyond test scale (thousands of reps) | Out of scope for this run | Load test `/api/location/batch` and dashboards |

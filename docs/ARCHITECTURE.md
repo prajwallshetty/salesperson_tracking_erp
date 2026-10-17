@@ -57,8 +57,47 @@ Actions or client components (the client only previews order totals with the sam
 server enforces every rule regardless (`authedRoute({ roles, managerPermission })`, `scopedSalespersonFilter`,
 `getAccessibleClient`, `assertSalespersonAccess`).
 
-**Multi-tenancy**: the data model has no tenant entity, so SalesGrid is single-tenant. Isolation between
-users is role/team/ownership based as above.
+Roles, teams and ownership (above) apply **inside one company**; companies are isolated from each other as
+described next.
+
+## Companies (multi-tenancy)
+
+SalesGrid hosts several companies in one database. Isolation is enforced in the data layer, not just in
+route code:
+
+- **Model**: `tenants` (company code, name, status `ACTIVE`/`SUSPENDED`, optional `activeUntil`).
+  18 tables carry `tenantId` (users, salespersons, clients, categories, products, orders, payments,
+  expenses, attendance, location sessions/points, visits, audit logs, notifications, idempotency keys,
+  settings, access codes, uploaded files); child tables (order items, ledger entries, assignments,
+  manager teams/permissions, expense history) are scoped through their parent. Unique keys that used to
+  be global (email, phone, employee code, SKU, barcode, category name, order/receipt/expense numbers,
+  offline and point ids, idempotency and setting keys) are unique **per company**. Existing data lives in
+  the *default* company (migration `2_multi_tenancy`).
+- **Where the company comes from**: the signed-in user's database row — never a header, query or body
+  field. `authedRoute` runs the handler inside `runWithTenant(user.tenantId, …)`.
+- **Enforcement**: all application code uses `prisma` from `src/lib/db`, a Prisma client extended by
+  `src/lib/db/tenancy.ts`: reads, aggregates and bulk writes are restricted to the company; creates are
+  stamped; an update cannot change `tenantId`; nested writes are stamped (or rejected); a query made
+  **outside** a company context throws instead of returning every company's rows. Every model must be
+  classified (a unit test fails for an unclassified model). Raw SQL (document numbering and its locks,
+  ledger/order/payment row locks, dashboard series) filters on `tenantId` itself.
+- **The unscoped client** `prismaRoot` exists only for code that works before a company is known or
+  across companies (sign-in resolution, session loading, the tenant CLI, retention job, file-ownership
+  check, dev quick login). `tests/unit/tenancy-guard.test.ts` lists the allowed files; anything else
+  importing it fails the build.
+- **Sign-in**: a company code selects the company (optional while only one company exists). Inside it,
+  an identifier matching two people is refused. Unknown company, unknown user and wrong secret look
+  the same (and take similar time); per-IP and per-account throttles apply.
+- **Realtime**: role rooms are `admins:<tenant>`, `managers:<tenant>`, `salespersons:<tenant>`,
+  `tenant:<tenant>`; per-person rooms use globally unique ids. Room subscriptions are authorised (a super
+  admin can follow only salespersons of their own company, verified in the database).
+- **Subscription rule**: a `SUSPENDED` company, or one past `activeUntil`, cannot sign in, use the API or
+  keep a socket; the reason is revealed only after valid credentials. There is no billing — the status is
+  changed by an operator (`npm run tenant -- suspend|activate|expiry`).
+- **Administration**: no platform-wide role or HTTP API. Companies are created, renamed, suspended and
+  re-coded with `npm run tenant`; each company's `SUPER_ADMIN` manages everything inside it.
+- **Files**: one upload directory, per-company access: a file opens only for its uploader, a super admin
+  of the owning company, or a user who can access a record of that company that references it.
 
 ## Money: orders, ledger, collections
 
@@ -80,17 +119,38 @@ dashboard day buckets are computed in that timezone (`src/lib/time.ts`), indepen
 
 ## GPS tracking (salesperson app)
 
-- Uses the browser Geolocation API (`watchPosition`, high accuracy) only while on duty and while the app is
-  open. Adaptive sampling as in the legacy app: every 15 s while moving, 60 s stationary, < 8 m jitter ignored.
-- Points (with real accuracy/speed/heading, battery and network type **only when the browser reports them**)
-  are buffered in `localStorage` per user and uploaded in batches; network failures keep them.
-- The server validates coordinates, rejects far-future timestamps, and **flags** (never deletes or edits)
-  implausible points (accuracy > 150 m, speed > 140 km/h). Flagged points are excluded from the live map,
-  distance and route polylines. Gaps > 15 min split route segments and are shown as gaps.
-- Permission denied / unsupported / no fix / stale fix are shown explicitly to the salesperson; admins see
-  "Stale" when an on-duty salesperson has no fix in 10 minutes. Nothing is simulated.
-- Browsers do not run geolocation in the background. The optional Screen Wake Lock keeps the device awake.
-  (The legacy Expo app was foreground-only too.)
+- **Sources**: in the Android app a native foreground service (persistent notification) delivers fixes in the
+  background; in a browser `watchPosition` delivers them while the page is open. Both feed one pipeline:
+  adaptive sampling (15 s moving, 60 s stationary, < 8 m jitter ignored), a per-user buffer in
+  `localStorage`, and authenticated batch uploads (`POST /api/location/batch`). Real accuracy, speed and
+  heading are sent; battery and network type only when the device reports them; mock-location fixes are dropped.
+- **Server ingest** (`src/features/tracking/service.ts`): identity and company come from the session. A
+  batch is processed in **timestamp** order; each point is judged against the last *accepted* stored point
+  (also across batches): accuracy > 150 m, an implied speed > 140 km/h, or a timestamp outside the shift's
+  window flag the point (`isFiltered` + reason) — it is kept for audit but never shown, counted or broadcast.
+  Duplicates (`clientPointId`) are stored once; invalid points are counted; a late older point never moves
+  the live position backwards. Batches are capped at 500 points.
+- **Device-reported state**: the phone tells the server `TRACKING`, `PERMISSION_DENIED`, `BACKGROUND_DENIED`
+  (foreground only: browser, or notifications blocked on Android), `GPS_DISABLED` or `STOPPED`
+  (`POST /api/location/status`, queued and retried when offline).
+- **Live state** (`computeLiveState`): `live` (last real fix ≤ 5 min), `stale`, `unavailable` (no fix yet),
+  `permission_denied` / `gps_disabled` (only while the report is newer than the last fix), `off_duty`.
+  Nothing is extrapolated; the console re-evaluates every 20 s so a marker cannot stay "live" by itself.
+- **Routes**: points belong to a *session* (one per shift) tied to an attendance record. Route history
+  returns per-shift summaries (start, end, duration, points accepted/flagged, distance, quality
+  *complete / in progress / incomplete*), the last known position, segments built from accepted fixes only
+  and split at gaps (> 15 min) and shift boundaries.
+- **Distance** (`calculateRouteDistanceMeters`): the sum of great-circle (Haversine) distances between
+  consecutive accepted fixes, skipping steps with accuracy worse than 150 m, shorter than 5 m (drift),
+  across a gap longer than 15 minutes (no straight line is assumed), implying more than 140 km/h, or longer
+  than 50 km. It is an estimate from sampled fixes and under-counts travel inside a gap.
+- **Stop rules**: End Day, sign-out, or the server answering "not on duty" stops the tracker (and the
+  Android service). Points arriving for a closed shift are refused unless they come through the offline
+  sync of that shift and fall inside its window.
+- **Retention**: off by default. `LOCATION_RETENTION_DAYS` (≥ 7) deletes raw points older than that daily,
+  with an audit record per company; sessions, attendance and stored distances are kept.
+- **Limits**: browsers (and a phone that has killed the app) provide no background location; gaps are
+  shown as gaps. See `MOBILE_ANDROID.md` §9 for the Android specifics.
 
 ## Offline mode
 
@@ -102,15 +162,22 @@ the server resolves it through the stored idempotency key.
 
 ## Realtime
 
-Same events, envelope and rooms as the legacy server (`user:`, `admins`, `managers`, `team:<spId>`,
-`salesperson:<spId>`, plus `salespersons` for role broadcasts). Browser sockets authenticate with the
-session cookie; same-origin is checked explicitly, cross-origin only for `CORS_ORIGINS`. If the socket is
-down the UI keeps working through polling.
+Socket.IO on the same server. Browser sockets authenticate with the session cookie (same-origin checked
+explicitly, cross-origin only for `CORS_ORIGINS`). Events, all scoped to the company of the change:
 
-With `REDIS_URL` set, Socket.IO uses `@socket.io/redis-adapter`: an emit or `disconnectSockets()` on one
-instance reaches matching sockets on all instances. API rate-limit counters move to Redis too (atomic
-INCR + expiry). If Redis becomes unreachable, the rate limiter falls back to per-process counters rather
-than rejecting requests, and `/api/health` reports `"redis": "down"`.
+| Event | Delivered to |
+|---|---|
+| `location:update`, `tracking:state`, `attendance:changed`, `order:*`, `payment:*`, `expense:*`, `client:assigned` | the company's admins and the salesperson's team room (managers, the salesperson) |
+| `product:changed`, `client:changed`, `settings:changed`, `team:changed` | everyone signed in to the company (clients refetch what they may see; payloads are ids only) |
+| `permissions:changed` | that manager only |
+| `notification:new` | the recipient, or the company's role room |
+
+A client that was disconnected, offline or in the background **missed** events, so the web app keeps a
+resync signal (socket reconnect, network returned, tab visible again after 20 s) and every live page
+refetches on it (`useRealtimeRefresh`); pages also keep their own polling as a fallback. Per-event
+counters mean simultaneous events cannot mask one another. A manager's open session joins a newly added
+team member's room immediately. With `REDIS_URL`, events, rooms and forced disconnects work across
+instances. When the socket is down the UI keeps working through polling.
 
 ## Files
 

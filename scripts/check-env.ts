@@ -13,6 +13,9 @@ import { validateConfig } from '../src/lib/config';
 async function main() {
   const result = validateConfig();
   const problems = [...result.errors];
+  if (process.env.NODE_ENV === 'production' && process.env.DEV_QUICK_LOGIN === 'true') {
+    problems.push('DEV_QUICK_LOGIN=true is set. It is ignored in production, but remove it from the production environment.');
+  }
   if (!process.env.UPLOAD_DIR) problems.push('UPLOAD_DIR is not set (defaults to ./uploads — use persistent storage in production).');
 
   if (process.env.DATABASE_URL) {
@@ -28,6 +31,8 @@ async function main() {
         );
         const dir = path.join(process.cwd(), 'prisma', 'migrations');
         const missing = readdirSync(dir, { withFileTypes: true }).filter((d) => d.isDirectory() && !applied.has(d.name)).map((d) => d.name);
+        const tenants = Number((await prisma.$queryRaw<{ n: bigint }[]>`SELECT COUNT(*)::bigint AS n FROM "tenants"`.catch(() => [{ n: BigInt(-1) }]))[0].n);
+        if (tenants === 0) problems.push('No company exists: run `npm run tenant -- list` / `create` (the migration normally creates the default company).');
         if (missing.length) problems.push(`Migrations not applied yet: ${missing.join(', ')} — review the SQL, then run \`npm run db:migrate\`.`);
       }
     } catch (e) {

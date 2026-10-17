@@ -24,6 +24,18 @@ adds `remember`. `GET/POST /api/auth/dev-login` (development only, 404 in produc
 `GET /api/app/config` (Android update settings). Behaviour changes: `GET /api/files/<name>` is now per-record (404 for users
 who cannot see the referencing record), and `?token=` is off by default.
 
+Companies (additive): `POST /api/auth/login` and `/api/auth/access-code-login` accept `company` (the company
+code); it is required only when more than one company exists (`GET /api/auth/login-config` →
+`{ companyRequired }`), otherwise omitted. `POST /api/access-codes/generate` also returns `companyCode` and
+`companyName` (what the employee enters with the code). `POST /api/location/status` (salesperson) reports the
+phone's tracking state (`ACTIVE`, `PERMISSION_DENIED`, `GPS_OFF`, …). `GET /api/salespersons/live-status` and
+`/api/location/current` return `liveState` / `liveStateLabel` / `locationAgeSeconds`; `/api/location/history`
+returns per-shift `sessions` with quality labels, flagged/accepted counters and the route distance.
+`POST /api/location/batch` accepts at most 500 points. New socket events: `tracking:state`, `client:changed`,
+`product:changed`, `settings:changed`, `team:changed`, `permissions:changed`. The tenant is always derived
+server-side from the signed-in user; no request field selects or overrides it. The complete generated endpoint
+list is in `docs/INVENTORY.md`.
+
 ---
 
 ## 1. Authentication (`/api/auth`)
@@ -35,7 +47,8 @@ who cannot see the referencing record), and `?token=` is off by default.
 ```json
 {
   "identifier": "admin@erp.com", // Email, Phone, or Employee Code
-  "password": "Password123!"
+  "password": "Password123!",
+  "company": "default"  // only needed when several companies exist
 }
 ```
 - **Response `200 OK`**:

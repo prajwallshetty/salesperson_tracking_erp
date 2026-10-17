@@ -15,9 +15,9 @@ same Next.js + Socket.IO server as the browser version.
 | API | 60+ Route Handlers on the same origin, cookie or Bearer auth | Same-origin cookie auth works in the WebView; no CORS changes needed. |
 | Realtime | Socket.IO on the same server, cookie handshake, same-origin check | Works unchanged (WebView origin = server origin). |
 | Auth | JWT in httpOnly `sg_session` cookie, DB check on every request, server-side revocation | Unchanged. The app never sees or stores the token. |
-| GPS | `navigator.geolocation` (foreground, while on duty) | Works in the WebView; Capacitor maps the web prompt to the Android location permission. |
+| GPS | `navigator.geolocation` (foreground only) | Replaced inside the app by a native **foreground service** (see §9) so tracking continues in the background; the browser keeps the foreground-only tracker. |
 | Files | `<input type=file capture>` for receipts; PDFs/CSV opened in new tabs | Camera works through Capacitor's file chooser. The WebView cannot show PDFs or handle downloads, so documents go through the Android share sheet (see §5). |
-| Tenancy | Single-tenant (no tenant model); isolation is role/team/ownership based on the server | Unchanged — all checks stay server-side. |
+| Companies (tenants) | Isolation is enforced on the server by a tenant-scoped database client, company-namespaced sockets and company-aware sign-in (see `ARCHITECTURE.md`). The app stores nothing that identifies a company except the non-secret company code typed at sign-in | Unchanged — the shell never sends a tenant id; the server derives it from the signed-in user. |
 
 **Decision**: Capacitor "hosted" mode (`server.url`). Web changes go live by deploying the server;
 only native changes need a new APK (§7).
@@ -44,6 +44,8 @@ Web-side native integration lives in the main app and is loaded **only inside th
 - `src/lib/native/biometric.ts` + `src/components/native/DeviceLock.tsx` / `BiometricSetting.tsx`
 - `src/components/native/NativeShell.tsx` — offline banner (console/login), "update required" gate
 - `src/lib/native/logic.ts` — the pure decisions (unit-tested)
+- `src/features/field/nativeLocation.ts` — Android foreground-service location source; `trackingConsent.ts` — the one-time disclosure
+- `src/lib/native/notify.ts` — Android notifications for alerts that arrive while the app is in the background
 
 ## 3. Environment variables
 
@@ -107,9 +109,9 @@ run as artifacts. Without the variable the workflow only checks that the project
 | HTTPS origin | The WebView origin is the server's HTTPS origin; release builds refuse cleartext; mixed content blocked. External links (Google Maps directions, `tel:`) open in the matching Android app. |
 | Back button | Closes the open sheet / navigation drawer first; otherwise goes back; on home screens (`/field`, `/dashboard`, `/login`) the app is minimised, not closed, so an open shift keeps tracking while the app stays in memory. |
 | Network errors | Server unreachable at launch → `offline.html` with *Try again* and automatic retry when the connection returns. While open: the field app's existing offline queue (orders, collections, expenses, visits, GPS) keeps working; console and login show an offline banner. |
-| GPS | Same tracker as the web app (foreground, while on duty, adaptive sampling). Android asks for location permission on *Start day*. No background-location permission is requested: tracking pauses when the app is closed or the phone kills it, exactly as in the browser, and gaps are shown in Route History. |
+| GPS | While on duty, a native foreground service with a persistent notification keeps location updates coming in the background and with the screen off (details, limits and permissions in §9). Same sampling, buffer, filters and authenticated upload as the browser. Gaps are shown in route history, never filled. |
 | Camera / files | Receipt photos use the system camera/file picker. PDFs (receipts), CSV exports and uploaded files open through the Android share sheet (*Open with* a PDF viewer, Drive, WhatsApp…), downloaded with the user's session — no tokens in URLs. |
-| Notifications | In-app realtime notifications and toasts work as on the web (Socket.IO). **Push notifications (app closed) are not implemented**: no existing module sends push, and it would need a Firebase project (`google-services.json`) plus server-side FCM sending. |
+| Notifications | In-app realtime notifications and toasts as on the web (Socket.IO). While the app is in the background but still running (during a shift the tracking service keeps it alive), notifications and approvals also appear as Android notifications. **Push while the app is closed is not implemented**: it needs a Firebase project (`google-services.json`) and server-side sending, and no module sends push today. |
 | Biometric unlock | Optional, per user per phone (*More → Profile → Security on this phone*), shown only if the phone has a fingerprint/face sensor or screen lock. Locks the app on start and after 5 min in the background; *Sign out* is always offered. It is a device lock in front of the server session — it never stores passwords or tokens and does not replace server authentication. Turned off for that user on sign-out. |
 | Updates | Web changes: deploy the server, users get them on next app open. Old native builds can be retired with `ANDROID_MIN_BUILD`. |
 
@@ -119,8 +121,11 @@ run as artifacts. Without the variable the workflow only checks that the project
   Android app); off → 12-hour token in a session cookie that is dropped when the browser or app process
   closes. The choice is kept when the session is renewed. API clients that don't send `remember` keep the
   legacy 7-day session.
-- With Remember me, the **sign-in name** (email / phone / employee code — never a password or access code)
-  is remembered on the device to prefill the form; *Not you?* forgets it, and *Sign out of all devices*
+- **Company code**: asked only while the deployment hosts several companies (the form learns this from
+  `GET /api/auth/login-config`); the same email, phone or employee code can exist in different companies.
+  Password and access-code sign-in both send it; the server resolves the company, never the client.
+- With Remember me, the **sign-in name and company code** (email / phone / employee code — never a password or access code)
+  are remembered on the device to prefill the form; *Not you?* forgets it, and *Sign out of all devices*
   clears it.
 - **Valid session → straight to the right home screen**: opening the app or `/login` with a valid
   session goes to `/dashboard` (admin/manager) or `/field` (salesperson); an expired or revoked
@@ -143,7 +148,7 @@ run as artifacts. Without the variable the workflow only checks that the project
 | Any page, component, style, text, API route, business rule, permission, report | **No** — deploy the server |
 | Server URL / domain | Yes |
 | App id, name, icon, splash, colours of the native splash/system bars | Yes |
-| Android permissions (e.g. adding background location or push) | Yes |
+| Android permissions (e.g. adding `ACCESS_BACKGROUND_LOCATION`, push) | Yes |
 | Adding/removing/upgrading a Capacitor plugin or Capacitor itself | Yes (plugin JS also ships with the web app; keep `apps/mobile` and root versions identical) |
 | `capacitor.config.ts`, `offline.html`, Gradle/SDK versions, signing key | Yes |
 
@@ -152,24 +157,62 @@ when an old shell must stop working (e.g. after a plugin change the web code dep
 
 ## 8. Testing status
 
-Verified in this repository (see `docs/VERIFICATION_REPORT.md`): Remember me cookies/lifetimes, refresh,
-auto-redirect by role, sign-out, remembered name, dev quick login (dev on / production off), no seed
-credentials in the build, back-button / lock / update-gate decision logic (unit tests), Android project
-generation, plugin wiring, icons and splash.
+**Verified without a phone** (see `VERIFICATION_REPORT.md`): sign-in, remember me, company sign-in, session
+handling, company isolation, access codes, GPS ingest / live state / route history, real-time delivery and
+reconnect recovery, back-button / lock / update-gate / consent logic, and that the Android project
+**compiles in CI** with every plugin (GitHub Actions workflow *Android APK*, run #4 onward: debug build,
+release build when signing secrets exist). The CI build does not publish an APK until the repository
+variable `SALESGRID_SERVER_URL` (your deployed `https://` server) is set, because an APK needs a real server
+address baked in; run the workflow manually with `server_url` or set the variable.
 
-**Not verified yet** — needs a physical Android phone (checklist below) and an Android SDK; the build
-environment used for this change had no access to Google's Android SDK downloads:
+**Not verified — needs a physical Android phone.** Do not assume any of this works until it has been checked:
 
-- [ ] `npm run build:debug` succeeds (or the CI workflow run is green) and the APK installs
+- [ ] The built APK installs and opens; the splash, icon and status-bar icon look right
 - [ ] Launch with a valid remembered session opens the right home screen; without one, the login page
+- [ ] Company code is asked once and remembered; the same employee code in two companies signs in to the right one
 - [ ] Remember me off: force-stop the app and reopen → login required
-- [ ] Sign out, then reopen → login page with the name prefilled; *Not you?* clears it
+- [ ] Sign out, then reopen → login page with name and company prefilled; *Not you?* clears both
 - [ ] Back button: closes sheets, navigates back, minimises on Home (shift keeps tracking)
 - [ ] Airplane mode at launch → offline page; turning data on reloads automatically
-- [ ] Start day → Android location prompt → "GPS live"; live map updates in the console
+- [ ] **First Start day shows the tracking disclosure; accepting leads to the Android location prompt**
+- [ ] **A persistent "SalesGrid is recording your route" notification appears with the monochrome icon and disappears on End day**
+- [ ] **Walk/drive ~1 km with the screen off for 10 minutes: the console shows a continuous route with no gap; the live map moves**
+- [ ] **Deny the location permission → the console shows "Location permission denied on the phone", the phone shows how to fix it and offers *Open Android settings***
+- [ ] **Switch Location off in quick settings → console shows "Phone location services are switched off"; switching on resumes after returning to the app**
+- [ ] **Block notifications → the app warns that Android may stop background tracking**
+- [ ] **Battery saver / OEM task killers (Xiaomi, Oppo, Samsung "deep sleep"): note whether tracking survives; exclude SalesGrid from battery optimisation if not**
+- [ ] **Swipe the app away from recents during a shift: note what happens (see §9 — expected: tracking stops until reopened)**
+- [ ] **Airplane mode while walking, then reconnect: buffered points arrive and appear in order**
+- [ ] A mock-location app is refused ("Mock location detected")
 - [ ] Visit, order, collection (receipt PDF opens via share sheet), expense with camera photo
 - [ ] Offline order/collection/expense queue and sync after reconnect
 - [ ] Reports CSV export and admin receipt PDF open via the share sheet
 - [ ] Biometric unlock: enable, background > 5 min, unlock; cancel → *Sign out* works; device without biometrics shows the reason
 - [ ] `ANDROID_MIN_BUILD` above the installed versionCode shows "Update required"
 - [ ] Admin and manager consoles usable on the phone (navigation drawer, back button closes it)
+- [ ] A background alert (e.g. a manager approves an expense) appears as an Android notification while the app is backgrounded but running
+
+## 9. Background tracking: how it works and its limits
+
+- **Mechanism**: `@capgo/background-geolocation` starts an Android foreground service of type `location`
+  with a persistent notification when the salesperson is on duty and stops it at End day (or sign-out, or
+  when the server says the day has ended). Fixes arrive in the web layer, pass the same adaptive sampling
+  (15 s moving / 60 s still), are buffered on the device and uploaded in authenticated batches.
+- **Permissions**: fine/coarse location, foreground-service (location), notifications (Android 13+). The
+  app does **not** request `ACCESS_BACKGROUND_LOCATION`: updates continue because the service is started
+  while the app is visible and shows its notification. If you later need the service to restart itself from
+  the background (e.g. after the phone kills it), that permission would be required, and Google Play
+  review of it — plus a new APK.
+- **Disclosure and consent**: before the first start, a plain-language sheet explains that location is
+  recorded in the background while on duty; the decision is stored per user on the device.
+- **Honest states**: the phone reports *tracking*, *permission denied*, *location services off*,
+  *notifications blocked* (Android may stop the service) and *stopped* to the server, which combines it
+  with the age of the last real fix (live ≤ 5 min, otherwise stale) for the console. Mock-location fixes
+  are discarded.
+- **Limits you should know**: (1) if Android kills the app process (swipe from recents, aggressive OEM
+  battery managers) tracking stops until the person reopens the app, which restarts it automatically when
+  they are still on duty — points are uploaded by the web layer, and there is no native upload or push to
+  restart it; (2) points recorded while the process is alive but offline are buffered and uploaded later;
+  (3) nothing is simulated or interpolated — a gap stays a gap.
+- **Google Play**: publishing an app that records location in the background requires the
+  *Location permissions* declaration in Play Console and a privacy policy that mentions it.
