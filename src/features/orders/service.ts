@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { prisma, LedgerEntryType, OrderStatus, Prisma, Role } from '@/lib/db';
+import { prisma, LedgerEntryType, OrderStatus, Prisma, Role, TxClient, currentTenantId } from '@/lib/db';
 import { calculateOrderTotals } from '@/lib/domain/orderCalculator';
 import { createOrderSchema, updateOrderStatusSchema } from '@/lib/validations/schemas';
 import { badRequest, forbidden, notFound } from '@/lib/http/errors';
@@ -150,7 +150,7 @@ export async function createOrder(
 
 type OrderWithItems = Prisma.OrderGetPayload<{ include: { items: true } }>;
 
-async function applyInvoice(tx: Prisma.TransactionClient, order: OrderWithItems, description: string) {
+async function applyInvoice(tx: TxClient, order: OrderWithItems, description: string) {
   for (const item of order.items) {
     await tx.product.update({ where: { id: item.productId }, data: { stock: { decrement: item.quantity } } });
   }
@@ -163,7 +163,7 @@ async function applyInvoice(tx: Prisma.TransactionClient, order: OrderWithItems,
   });
 }
 
-async function reverseInvoice(tx: Prisma.TransactionClient, order: OrderWithItems) {
+async function reverseInvoice(tx: TxClient, order: OrderWithItems) {
   for (const item of order.items) {
     await tx.product.update({ where: { id: item.productId }, data: { stock: { increment: item.quantity } } });
   }
@@ -186,7 +186,7 @@ export async function updateOrderStatus(
 
   const result = await prisma.$transaction(async (tx) => {
     // Row lock serialises concurrent approvals of the same order.
-    const locked = await tx.$queryRaw<{ id: string }[]>`SELECT "id" FROM "orders" WHERE "id" = ${orderId} FOR UPDATE`;
+    const locked = await tx.$queryRaw<{ id: string }[]>`SELECT "id" FROM "orders" WHERE "id" = ${orderId} AND "tenantId" = ${currentTenantId()} FOR UPDATE`;
     if (!locked.length) throw notFound('Order not found');
 
     const order = await tx.order.findUniqueOrThrow({ where: { id: orderId }, include: { items: true } });

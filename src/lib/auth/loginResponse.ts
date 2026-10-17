@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { signSessionToken } from './tokens';
 import { sessionCookieOptions } from './session';
 import type { Role } from '@/lib/permissions';
+import type { Tenant } from '@/lib/db';
 
 interface LoginUserRow {
   id: string;
@@ -18,7 +19,7 @@ interface LoginUserRow {
  * Legacy login response body + the httpOnly session cookie used by the browser UI.
  * `remember` defaults to true: API clients that do not send it keep the legacy 7-day session.
  */
-export function loginResponse(user: LoginUserRow, { remember = true }: { remember?: boolean } = {}): NextResponse {
+export function loginResponse(user: LoginUserRow, { remember = true, tenant }: { remember?: boolean; tenant?: Pick<Tenant, 'slug' | 'name'> } = {}): NextResponse {
   const token = signSessionToken(user.id, user.role, user.tokenVersion ?? 0, remember);
   const res = NextResponse.json({
     token,
@@ -34,6 +35,7 @@ export function loginResponse(user: LoginUserRow, { remember = true }: { remembe
       territory: user.salespersonProfile?.territory,
       dutyStatus: user.salespersonProfile?.status,
     },
+    ...(tenant ? { tenant: { slug: tenant.slug, name: tenant.name } } : {}),
     expiresIn: remember ? '7d' : '12h',
     remember,
   });

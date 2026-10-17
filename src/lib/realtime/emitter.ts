@@ -1,6 +1,8 @@
 import { randomUUID } from 'crypto';
 import type { Server as SocketIOServer } from 'socket.io';
 import { SOCKET_EVENTS } from '@/lib/domain/constants';
+import { currentTenantId } from '@/lib/db/tenancy';
+import { rooms } from './rooms';
 
 /**
  * Realtime broadcast helpers. The Socket.IO server is created by `server.ts` and stored on
@@ -37,8 +39,9 @@ function emitToTeam(event: string, salespersonId: string | undefined | null, dat
   const io = getIO();
   if (!io) return;
   const envelope = createEnvelope(event, plain(data));
-  if (salespersonId) io.to(`team:${salespersonId}`).to('admins').emit(event, envelope);
-  else io.to('admins').to('managers').emit(event, envelope);
+  const t = currentTenantId(); // always the tenant of the request that produced the change
+  if (salespersonId) io.to(rooms.team(salespersonId)).to(rooms.admins(t)).emit(event, envelope);
+  else io.to(rooms.admins(t)).to(rooms.managers(t)).emit(event, envelope);
 }
 
 export const notifySalespersonLocation = (salespersonId: string, point: unknown) =>
@@ -71,8 +74,9 @@ export function notifyInAppNotification(recipientId: string | null, role: string
   const io = getIO();
   if (!io) return;
   const envelope = createEnvelope(SOCKET_EVENTS.NOTIFICATION_NEW, plain(notification));
-  if (recipientId) io.to(`user:${recipientId}`).emit(SOCKET_EVENTS.NOTIFICATION_NEW, envelope);
-  else if (role === 'SUPER_ADMIN') io.to('admins').emit(SOCKET_EVENTS.NOTIFICATION_NEW, envelope);
-  else if (role === 'MANAGER') io.to('managers').emit(SOCKET_EVENTS.NOTIFICATION_NEW, envelope);
-  else if (role === 'SALESPERSON') io.to('salespersons').emit(SOCKET_EVENTS.NOTIFICATION_NEW, envelope);
+  const t = currentTenantId();
+  if (recipientId) io.to(rooms.user(recipientId)).emit(SOCKET_EVENTS.NOTIFICATION_NEW, envelope);
+  else if (role === 'SUPER_ADMIN') io.to(rooms.admins(t)).emit(SOCKET_EVENTS.NOTIFICATION_NEW, envelope);
+  else if (role === 'MANAGER') io.to(rooms.managers(t)).emit(SOCKET_EVENTS.NOTIFICATION_NEW, envelope);
+  else if (role === 'SALESPERSON') io.to(rooms.salespersons(t)).emit(SOCKET_EVENTS.NOTIFICATION_NEW, envelope);
 }

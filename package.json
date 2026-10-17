@@ -2,7 +2,7 @@
   "name": "salesgrid",
   "version": "2.0.0",
   "private": true,
-  "description": "SalesGrid — unified field sales, GPS tracking and order management (Next.js)",
+  "description": "SalesGrid \u2014 unified field sales, GPS tracking and order management (Next.js)",
   "engines": {
     "node": ">=22"
   },
@@ -23,6 +23,7 @@
     "db:migrate:dev": "prisma migrate dev",
     "db:baseline": "prisma migrate resolve --applied 0_init",
     "db:seed": "tsx prisma/seed.ts",
+    "tenant": "tsx scripts/tenant.ts",
     "check:env": "tsx scripts/check-env.ts"
   },
   "dependencies": {

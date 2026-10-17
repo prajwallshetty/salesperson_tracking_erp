@@ -6,6 +6,8 @@
 const KEY = 'salesgrid:quick-access';
 
 export interface QuickAccess {
+  /** Company code (not secret): which company this device signs in to. */
+  company: string;
   identifier: string;
   mode: 'PASSWORD' | 'ACCESS_CODE';
   remember: boolean;
@@ -17,7 +19,7 @@ export function readQuickAccess(): QuickAccess | null {
     if (!raw) return null;
     const v = JSON.parse(raw);
     if (typeof v?.identifier !== 'string' || (v.mode !== 'PASSWORD' && v.mode !== 'ACCESS_CODE')) return null;
-    return { identifier: v.identifier, mode: v.mode, remember: true };
+    return { company: typeof v.company === 'string' ? v.company : '', identifier: v.identifier, mode: v.mode, remember: true };
   } catch {
     return null;
   }
@@ -25,7 +27,7 @@ export function readQuickAccess(): QuickAccess | null {
 
 export function saveQuickAccess(v: QuickAccess) {
   try {
-    if (v.remember) window.localStorage.setItem(KEY, JSON.stringify({ identifier: v.identifier, mode: v.mode }));
+    if (v.remember) window.localStorage.setItem(KEY, JSON.stringify({ company: v.company, identifier: v.identifier, mode: v.mode }));
     else window.localStorage.removeItem(KEY);
   } catch {
     /* storage unavailable: nothing is remembered */

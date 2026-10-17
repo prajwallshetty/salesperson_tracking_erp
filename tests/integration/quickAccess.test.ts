@@ -15,7 +15,7 @@ const lifetime = (token: string) => {
 
 describe('Remember me', () => {
   it('off: 12-hour token and a session cookie (no Max-Age / Expires)', async () => {
-    const r = await api('/api/auth/login', { body: { identifier: 'rahul@erp.com', password: 'Password123!', remember: false } });
+    const r = await api('/api/auth/login', { body: { company: 'default', identifier: 'rahul@erp.com', password: 'Password123!', remember: false } });
     expect(r.status).toBe(200);
     expect(r.json.expiresIn).toBe('12h');
     expect(r.json.remember).toBe(false);
@@ -27,20 +27,20 @@ describe('Remember me', () => {
   });
 
   it('on: 7-day token and a persistent cookie', async () => {
-    const r = await api('/api/auth/login', { body: { identifier: 'rahul@erp.com', password: 'Password123!', remember: true } });
+    const r = await api('/api/auth/login', { body: { company: 'default', identifier: 'rahul@erp.com', password: 'Password123!', remember: true } });
     expect(r.json.expiresIn).toBe('7d');
     expect(lifetime(r.json.token)).toBe(7 * 24 * 3600);
     expect(r.headers.get('set-cookie')).toMatch(/Max-Age=604800/);
   });
 
   it('API clients that do not send it keep the legacy 7-day session', async () => {
-    const r = await api('/api/auth/login', { body: { identifier: 'rahul@erp.com', password: 'Password123!' } });
+    const r = await api('/api/auth/login', { body: { company: 'default', identifier: 'rahul@erp.com', password: 'Password123!' } });
     expect(r.json.expiresIn).toBe('7d');
     expect(r.headers.get('set-cookie')).toMatch(/Max-Age=604800/);
   });
 
   it('access-code sign-in honours it too', async () => {
-    const r = await api('/api/auth/access-code-login', { body: { identifier: 'EMP-001', accessCode: 'RAHUL12345', remember: false } });
+    const r = await api('/api/auth/access-code-login', { body: { company: 'default', identifier: 'EMP-001', accessCode: 'RAHUL12345', remember: false } });
     expect(r.status).toBe(200);
     expect(r.headers.get('set-cookie')).not.toMatch(/Max-Age/i);
   });
@@ -80,7 +80,7 @@ describe('development quick login (DEV_QUICK_LOGIN=true, NODE_ENV=development in
 
   it('refuses deactivated users and invalid input', async () => {
     const list = (await api('/api/auth/dev-login')).json.data;
-    const sp = list.find((u: any) => u.label === 'EMP-003');
+    const sp = list.find((u: any) => u.label.endsWith('EMP-003') && u.label.startsWith('default'));
     await db.user.update({ where: { id: sp.id }, data: { status: 'INACTIVE' } });
     try {
       expect((await api('/api/auth/dev-login', { body: { userId: sp.id } })).status).toBe(403);

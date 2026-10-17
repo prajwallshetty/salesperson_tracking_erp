@@ -13,6 +13,12 @@ export const POST = authedRoute({ roles: [Role.SUPER_ADMIN, Role.MANAGER] }, asy
   if (!parsed.success || (!parsed.data.codeId && !parsed.data.userId)) return json({ error: 'Valid codeId or userId is required' }, 400);
   const { codeId, userId, endSessions } = parsed.data;
 
+  // Team scope is decided before anything about the target is revealed (no 404-vs-403 probing).
+  if (userId && !codeId && user.role === Role.MANAGER) {
+    const inTeam = await prisma.managerSalesperson.findFirst({ where: { managerId: user.id, salesperson: { userId } } });
+    if (!inTeam) return json({ error: 'Unauthorized to revoke access codes for this user.' }, 403);
+  }
+
   const target = codeId
     ? await prisma.userAccessCode.findUnique({ where: { id: codeId } })
     : await prisma.userAccessCode.findFirst({ where: { userId, status: 'ACTIVE' }, orderBy: { createdAt: 'desc' } });

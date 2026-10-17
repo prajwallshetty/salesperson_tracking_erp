@@ -23,7 +23,7 @@ describe('authentication & sessions', () => {
 
   it('logs in by email, phone and employee code with the legacy response shape', async () => {
     for (const id of ['rahul@erp.com', '9876543212', 'EMP-001']) {
-      const r = await api('/api/auth/login', { body: { identifier: id, password: 'Password123!' } });
+      const r = await api('/api/auth/login', { body: { company: 'default', identifier: id, password: 'Password123!' } });
       expect(r.status).toBe(200);
       expect(r.json.token).toBeTruthy();
       expect(r.json.expiresIn).toBe('7d');
@@ -36,17 +36,17 @@ describe('authentication & sessions', () => {
   });
 
   it('accepts the legacy `email` field instead of `identifier`', async () => {
-    const r = await api('/api/auth/login', { body: { email: 'admin@erp.com', password: 'Password123!' } });
+    const r = await api('/api/auth/login', { body: { company: 'default', email: 'admin@erp.com', password: 'Password123!' } });
     expect(r.status).toBe(200);
   });
 
   it('rejects bad credentials without revealing which part was wrong', async () => {
-    const a = await api('/api/auth/login', { body: { identifier: 'admin@erp.com', password: 'wrong-password' } });
-    const b = await api('/api/auth/login', { body: { identifier: 'nobody@erp.com', password: 'wrong-password' } });
+    const a = await api('/api/auth/login', { body: { company: 'default', identifier: 'admin@erp.com', password: 'wrong-password' } });
+    const b = await api('/api/auth/login', { body: { company: 'default', identifier: 'nobody@erp.com', password: 'wrong-password' } });
     expect(a.status).toBe(401);
     expect(b.status).toBe(401);
     expect(a.json.error).toBe(b.json.error);
-    expect((await api('/api/auth/login', { body: { identifier: 'ab', password: '' } })).status).toBe(400);
+    expect((await api('/api/auth/login', { body: { company: 'default', identifier: 'ab', password: '' } })).status).toBe(400);
   });
 
   it('authenticates with either the Bearer token or the session cookie', async () => {
@@ -86,7 +86,7 @@ describe('authentication & sessions', () => {
     await db.user.update({ where: { id: s.user.id }, data: { status: 'INACTIVE' } });
     try {
       expect((await api('/api/auth/me', { token: s.token })).status).toBe(401);
-      expect((await api('/api/auth/login', { body: { identifier: 'vishal@erp.com', password: 'Password123!' } })).status).toBe(403);
+      expect((await api('/api/auth/login', { body: { company: 'default', identifier: 'vishal@erp.com', password: 'Password123!' } })).status).toBe(403);
     } finally {
       await db.user.update({ where: { id: s.user.id }, data: { status: 'ACTIVE' } });
     }
@@ -113,7 +113,7 @@ describe('authentication & sessions', () => {
   });
 
   it('access-code login works and locks after 5 failed attempts', async () => {
-    const ok = await api('/api/auth/access-code-login', { body: { identifier: 'EMP-001', accessCode: 'RAHUL12345' } });
+    const ok = await api('/api/auth/access-code-login', { body: { company: 'default', identifier: 'EMP-001', accessCode: 'RAHUL12345' } });
     expect(ok.status).toBe(200);
     expect(ok.json.user.employeeCode).toBe('EMP-001');
 
@@ -125,15 +125,15 @@ describe('authentication & sessions', () => {
     expect(gen.json.accessCode).toMatch(/^[2-9A-Z]{3}-[2-9A-Z]{3}$/);
 
     for (let i = 0; i < 4; i++) {
-      expect((await api('/api/auth/access-code-login', { body: { identifier: 'EMP-002', accessCode: 'WRONG-CODE' } })).status).toBe(401);
+      expect((await api('/api/auth/access-code-login', { body: { company: 'default', identifier: 'EMP-002', accessCode: 'WRONG-CODE' } })).status).toBe(401);
     }
-    expect((await api('/api/auth/access-code-login', { body: { identifier: 'EMP-002', accessCode: 'WRONG-CODE' } })).status).toBe(423);
+    expect((await api('/api/auth/access-code-login', { body: { company: 'default', identifier: 'EMP-002', accessCode: 'WRONG-CODE' } })).status).toBe(423);
     // Even the right code is refused while locked.
-    expect((await api('/api/auth/access-code-login', { body: { identifier: 'EMP-002', accessCode: gen.json.accessCode } })).status).toBe(423);
+    expect((await api('/api/auth/access-code-login', { body: { company: 'default', identifier: 'EMP-002', accessCode: gen.json.accessCode } })).status).toBe(423);
 
     // Revoking + regenerating clears the lock (new code).
     const gen2 = await api('/api/access-codes/generate', { token: admin.token, body: { userId: ahmed.userId } });
-    expect((await api('/api/auth/access-code-login', { body: { identifier: 'EMP-002', accessCode: gen2.json.accessCode } })).status).toBe(200);
+    expect((await api('/api/auth/access-code-login', { body: { company: 'default', identifier: 'EMP-002', accessCode: gen2.json.accessCode } })).status).toBe(200);
   });
 });
 

@@ -40,6 +40,7 @@ export default function AccessCodesPage() {
     code: string;
     userName: string;
     employeeCode: string;
+    companyCode?: string;
     expiresAt?: string;
   } | null>(null);
   const [copied, setCopied] = useState(false);
@@ -109,6 +110,7 @@ export default function AccessCodesPage() {
           code: data.plainAccessCode,
           userName: data.userName,
           employeeCode: data.employeeCode,
+          companyCode: data.companyCode,
           expiresAt: data.expiresAt,
         });
         setSelectedUserId('');
@@ -475,9 +477,12 @@ export default function AccessCodesPage() {
 
               <div className="space-y-1.5 text-xs text-[#586570] bg-gray-50 p-4 rounded-xl border border-gray-200">
                 <p className="font-bold text-[#0B1320]">How the staff member logs in:</p>
-                <p>1. Open the mobile app and choose <strong>"Access Code Login"</strong>.</p>
-                <p>2. Enter Employee ID: <strong className="font-mono text-[#0B1320]">{oneTimeCodeData.employeeCode}</strong></p>
-                <p>3. Enter the Access Code above: <strong className="font-mono text-[#0B1320]">{oneTimeCodeData.code}</strong></p>
+                <p>1. Open the mobile app and choose <strong>"Access code"</strong>.</p>
+                {oneTimeCodeData.companyCode && (
+                  <p>2. Enter Company code: <strong className="font-mono text-[#0B1320]">{oneTimeCodeData.companyCode}</strong> (asked only the first time)</p>
+                )}
+                <p>{oneTimeCodeData.companyCode ? '3' : '2'}. Enter Employee ID: <strong className="font-mono text-[#0B1320]">{oneTimeCodeData.employeeCode}</strong></p>
+                <p>{oneTimeCodeData.companyCode ? '4' : '3'}. Enter the Access Code above: <strong className="font-mono text-[#0B1320]">{oneTimeCodeData.code}</strong></p>
               </div>
             </div>
 

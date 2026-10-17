@@ -2,10 +2,10 @@
 
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { AlertCircle, ArrowRight, KeyRound, Lock, User } from 'lucide-react';
+import { AlertCircle, ArrowRight, Building2, KeyRound, Lock, User } from 'lucide-react';
 import { BrandMark } from '@/components/shared/Brand';
 import { homePathForRole, type Role } from '@/lib/permissions';
-import { apiJson, errorMessage } from '@/lib/client/apiFetch';
+import { apiJson, errorMessage, ApiError } from '@/lib/client/apiFetch';
 import { forgetQuickAccess, readQuickAccess, saveQuickAccess } from '@/lib/client/quickAccess';
 import { isNativeApp } from '@/lib/native/platform';
 
@@ -33,6 +33,8 @@ const inputCls =
 export default function LoginForm({ devQuickLogin }: { devQuickLogin: boolean }) {
   const params = useSearchParams();
   const [mode, setMode] = useState<Mode>('PASSWORD');
+  const [company, setCompany] = useState('');
+  const [companyRequired, setCompanyRequired] = useState(false);
   const [identifier, setIdentifier] = useState('');
   const [secret, setSecret] = useState('');
   const [remember, setRemember] = useState(false);
@@ -47,12 +49,20 @@ export default function LoginForm({ devQuickLogin }: { devQuickLogin: boolean })
     const saved = readQuickAccess();
     if (saved) {
       setMode(saved.mode);
+      setCompany(saved.company);
       setIdentifier(saved.identifier);
       setRememberedName(true);
       setRemember(true);
     } else {
       setRemember(isNativeApp());
     }
+  }, []);
+
+  // The company code is only asked for when the deployment hosts several companies.
+  useEffect(() => {
+    apiJson<{ companyRequired: boolean }>('/api/auth/login-config')
+      .then((r) => setCompanyRequired(r.companyRequired))
+      .catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -76,12 +86,14 @@ export default function LoginForm({ devQuickLogin }: { devQuickLogin: boolean })
         method: 'POST',
         json:
           mode === 'PASSWORD'
-            ? { identifier: identifier.trim(), password: secret, remember }
-            : { identifier: identifier.trim(), accessCode: secret.trim().toUpperCase(), remember },
+            ? { company: company.trim() || undefined, identifier: identifier.trim(), password: secret, remember }
+            : { company: company.trim() || undefined, identifier: identifier.trim(), accessCode: secret.trim().toUpperCase(), remember },
       });
-      saveQuickAccess({ identifier: identifier.trim(), mode, remember });
+      saveQuickAccess({ company: company.trim().toLowerCase(), identifier: identifier.trim(), mode, remember });
       finish(res.user.role);
     } catch (err) {
+      // The server asks for a company code when the deployment hosts several companies.
+      if (err instanceof ApiError && err.code === 'COMPANY_REQUIRED') setCompanyRequired(true);
       setError(errorMessage(err, 'Sign-in failed'));
       setLoading(false);
     }
@@ -134,6 +146,28 @@ export default function LoginForm({ devQuickLogin }: { devQuickLogin: boolean })
       )}
 
       <form onSubmit={submit} className="space-y-4" noValidate>
+        {(companyRequired || company) && (
+          <div>
+            <label htmlFor="company" className="block text-xs font-semibold text-[#0B1320] mb-1.5">
+              Company code
+            </label>
+            <div className="relative">
+              <Building2 className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#80909D]" />
+              <input
+                id="company"
+                name="organization"
+                autoComplete="organization"
+                autoCapitalize="none"
+                required={companyRequired}
+                value={company}
+                onChange={(e) => setCompany(e.target.value.toLowerCase())}
+                placeholder="e.g. acme"
+                className={inputCls}
+              />
+            </div>
+            <p className="text-[11px] text-[#80909D] mt-1.5">Given to you by your administrator.</p>
+          </div>
+        )}
         <div>
           <label htmlFor="identifier" className="block text-xs font-semibold text-[#0B1320] mb-1.5">
             {mode === 'PASSWORD' ? 'Email, mobile number or employee code' : 'Employee code or mobile number'}
@@ -187,6 +221,7 @@ export default function LoginForm({ devQuickLogin }: { devQuickLogin: boolean })
               onClick={() => {
                 forgetQuickAccess();
                 setIdentifier('');
+                setCompany('');
                 setRememberedName(false);
                 setRemember(isNativeApp());
               }}
@@ -201,7 +236,7 @@ export default function LoginForm({ devQuickLogin }: { devQuickLogin: boolean })
         </p>
         <button
           type="submit"
-          disabled={loading || !identifier.trim() || !secret}
+          disabled={loading || !identifier.trim() || !secret || (companyRequired && !company.trim())}
           className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#081224] text-white text-sm font-semibold hover:bg-[#111F36] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? 'Signing in…' : 'Sign in'}

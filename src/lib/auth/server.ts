@@ -24,7 +24,7 @@ export function sessionEndedUrl(fallbackNext?: string): string {
 
 /** Strips server-only scope details before handing the user to the browser. */
 export function toClientUser(u: AuthenticatedUser) {
-  const { managedSalespersonIds: _ids, tokenVersion: _tv, ...rest } = u;
+  const { managedSalespersonIds: _ids, tokenVersion: _tv, tenantId: _tid, ...rest } = u;
   return rest;
 }
 export type ClientUser = ReturnType<typeof toClientUser>;

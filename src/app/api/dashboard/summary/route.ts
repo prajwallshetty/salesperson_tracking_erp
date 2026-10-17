@@ -19,7 +19,9 @@ export const GET = authedRoute({ managerPermission: 'canViewDashboard' }, async 
   const sevenDaysAgo = startOfBusinessDate(last7Days[0]);
 
   // Day buckets computed in the business timezone (legacy used UTC dates).
-  const sqlIds = ids === undefined ? Prisma.sql`TRUE` : ids.length ? Prisma.sql`"salespersonId" IN (${Prisma.join(ids)})` : Prisma.sql`FALSE`;
+  const scopeSql = ids === undefined ? Prisma.sql`TRUE` : ids.length ? Prisma.sql`"salespersonId" IN (${Prisma.join(ids)})` : Prisma.sql`FALSE`;
+  // Raw SQL bypasses the tenant-scoped client, so it filters on the tenant itself.
+  const sqlIds = Prisma.sql`"tenantId" = ${user.tenantId} AND ${scopeSql}`;
   const tz = DEFAULT_TIMEZONE;
 
   const [

@@ -65,6 +65,9 @@ export const POST = authedRoute({ roles: [Role.SUPER_ADMIN, Role.MANAGER] }, asy
       userName: target.name,
       employeeName: target.name,
       employeeCode: target.salespersonProfile?.employeeCode,
+      // What the employee must enter besides the code: the company they belong to.
+      companyCode: user.tenantSlug,
+      companyName: user.tenantName,
     },
     201
   );

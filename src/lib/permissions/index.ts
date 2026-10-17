@@ -56,6 +56,12 @@ export interface AuthenticatedUser {
   status: string;
   /** Server-only: current session version (see users.tokenVersion). */
   tokenVersion?: number;
+  /** Server-only: the company this user belongs to. Always read from the database, never from the client. */
+  tenantId: string;
+  tenantSlug: string;
+  tenantName: string;
+  /** Subscription end (ISO) or null for no expiry. */
+  tenantActiveUntil: string | null;
   salespersonId?: string;
   employeeCode?: string;
   territory?: string;

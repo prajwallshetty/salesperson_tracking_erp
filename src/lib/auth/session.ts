@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server';
-import { prisma, UserStatus } from '@/lib/db';
+import { prismaRoot, UserStatus, TenantStatus } from '@/lib/db';
 import { config } from '@/lib/config';
 import { DEFAULT_MANAGER_PERMISSIONS, MANAGER_PERMISSION_KEYS, type AuthenticatedUser, type PermissionMap } from '@/lib/permissions';
 import { SESSION_COOKIE, SESSION_MAX_AGE_SECONDS } from './constants';
@@ -32,6 +32,11 @@ export function extractToken(req: NextRequest | Request): string | null {
   return q || null;
 }
 
+/** Active status and (if set) subscription end date not yet reached. */
+export function isTenantUsable(t: { status: TenantStatus | string; activeUntil: Date | null }, now = new Date()): boolean {
+  return t.status === TenantStatus.ACTIVE && (!t.activeUntil || t.activeUntil.getTime() > now.getTime());
+}
+
 function toPermissionMap(row: Partial<Record<string, unknown>> | null): PermissionMap {
   const map = { ...DEFAULT_MANAGER_PERMISSIONS };
   if (row) {
@@ -48,15 +53,20 @@ function toPermissionMap(row: Partial<Record<string, unknown>> | null): Permissi
  * and nothing in the token can elevate role or scope.
  */
 export async function loadAuthenticatedUser(userId: string, tokenVersion?: number): Promise<AuthenticatedUser | null> {
-  const user = await prisma.user.findUnique({
+  // Unscoped on purpose: the tenant is not known yet — it is derived from this row. The id comes
+  // from a token signed by this server.
+  const user = await prismaRoot.user.findUnique({
     where: { id: userId },
     include: {
+      tenant: true,
       salespersonProfile: true,
       managerPermissions: true,
       managedSalespersons: { select: { salespersonId: true } },
     },
   });
   if (!user || user.status !== UserStatus.ACTIVE) return null;
+  // Subscription rules: a suspended or expired company cannot use the app.
+  if (!isTenantUsable(user.tenant)) return null;
   // Sessions issued before the user's last "sign out everywhere" are no longer valid.
   if (tokenVersion !== undefined && tokenVersion !== user.tokenVersion) return null;
 
@@ -68,6 +78,10 @@ export async function loadAuthenticatedUser(userId: string, tokenVersion?: numbe
     role: user.role,
     status: user.status,
     tokenVersion: user.tokenVersion,
+    tenantId: user.tenantId,
+    tenantSlug: user.tenant.slug,
+    tenantName: user.tenant.name,
+    tenantActiveUntil: user.tenant.activeUntil ? user.tenant.activeUntil.toISOString() : null,
     salespersonId: user.salespersonProfile?.id,
     employeeCode: user.salespersonProfile?.employeeCode,
     territory: user.salespersonProfile?.territory,

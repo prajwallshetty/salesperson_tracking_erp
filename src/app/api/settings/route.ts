@@ -20,9 +20,10 @@ export const PUT = authedRoute({ roles: [Role.SUPER_ADMIN] }, async (ctx) => {
   if (!Array.isArray(settings)) return json({ error: 'settings array required' }, 400);
   const parsed = settingsSchema.parse(settings);
 
+  const tenantId = ctx.user.tenantId;
   await prisma.$transaction(
     parsed.map((s) =>
-      prisma.systemSetting.upsert({ where: { key: s.key }, update: { value: String(s.value) }, create: { key: s.key, value: String(s.value) } })
+      prisma.systemSetting.upsert({ where: { tenantId_key: { tenantId, key: s.key } }, update: { value: String(s.value) }, create: { key: s.key, value: String(s.value) } })
     )
   );
   await logAuditEvent({ actor: actorFrom(ctx), action: 'UPDATE_SYSTEM_SETTINGS', module: 'SETTINGS', newValue: parsed });

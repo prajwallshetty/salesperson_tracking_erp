@@ -7,6 +7,8 @@ export const loginSchema = z.object({
   deviceId: z.string().optional(),
   /** "Remember me" (default true = legacy 7-day persistent session). */
   remember: z.boolean().optional(),
+  /** Company code. Optional only while the deployment has a single company. */
+  company: z.string().trim().max(64).optional(),
 });
 
 export const locationPointSchema = z.object({
@@ -124,6 +126,7 @@ export const accessCodeLoginSchema = z.object({
   accessCode: z.string().min(4, 'Access code must be at least 4 characters').max(32),
   deviceId: z.string().optional(),
   remember: z.boolean().optional(),
+  company: z.string().trim().max(64).optional(),
 });
 
 export const generateAccessCodeSchema = z.object({

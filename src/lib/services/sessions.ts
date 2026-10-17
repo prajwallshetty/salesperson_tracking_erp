@@ -2,6 +2,7 @@ import { prisma, Role } from '@/lib/db';
 import { forbidden, notFound } from '@/lib/http/errors';
 import { logAuditEvent, type AuditActor } from '@/lib/services/audit';
 import { getIO } from '@/lib/realtime/emitter';
+import { rooms } from '@/lib/realtime/rooms';
 import type { AuthenticatedUser } from '@/lib/permissions';
 
 /**
@@ -15,7 +16,7 @@ export async function revokeUserSessions(userId: string, actor: AuditActor, reas
     data: { tokenVersion: { increment: 1 } },
     select: { id: true, tokenVersion: true },
   });
-  getIO()?.in(`user:${userId}`).disconnectSockets(true);
+  getIO()?.in(rooms.user(userId)).disconnectSockets(true);
   await logAuditEvent({ actor, action: 'REVOKE_SESSIONS', module: 'AUTH', recordId: userId, newValue: { reason } });
   return updated;
 }

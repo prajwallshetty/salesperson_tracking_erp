@@ -120,7 +120,7 @@ export async function createExpense(
   }
 
   if (data.offlineId) {
-    const existing = await prisma.expense.findUnique({ where: { offlineId: data.offlineId }, include: { salesperson: { include: { user: true } } } });
+    const existing = await prisma.expense.findFirst({ where: { offlineId: data.offlineId }, include: { salesperson: { include: { user: true } } } });
     if (existing) {
       if (existing.salespersonId !== salespersonId) throw forbidden('Offline reference belongs to another user');
       return { status: 200, body: { message: 'Expense already synchronized', data: withAmount(existing) } };
@@ -177,7 +177,7 @@ export async function createExpense(
     );
   } catch (err) {
     if (isUniqueViolation(err) && data.offlineId) {
-      const existing = await prisma.expense.findUnique({ where: { offlineId: data.offlineId } });
+      const existing = await prisma.expense.findFirst({ where: { offlineId: data.offlineId } });
       if (existing) return { status: 200, body: { message: 'Expense already synchronized', data: withAmount(existing) } };
     }
     throw err;

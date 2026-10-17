@@ -1,4 +1,4 @@
-import { Prisma } from '@/lib/db';
+import { Prisma, TxClient, currentTenantId } from '@/lib/db';
 
 /**
  * Document numbers: ORD-YYYY-000001, PAY-YYYY-00001, EXP-YYYY-000001 (legacy formats).
@@ -16,14 +16,17 @@ const SPECS = {
 
 export type NumberedDocument = keyof typeof SPECS;
 
-export async function nextDocumentNumber(tx: Prisma.TransactionClient, kind: NumberedDocument, now = new Date()): Promise<string> {
+export async function nextDocumentNumber(tx: TxClient, kind: NumberedDocument, now = new Date()): Promise<string> {
   const spec = SPECS[kind];
   // Serialise number assignment per document type until this transaction commits, so parallel
   // requests never compute the same "next" value. Released automatically at COMMIT/ROLLBACK.
-  await tx.$executeRawUnsafe(`SELECT pg_advisory_xact_lock(hashtext('salesgrid:${kind}_number'))`);
-  // Identifiers come from the constant table above, never from user input.
+  // Numbers are per company: the lock and the MAX() are both scoped to the current tenant.
+  const tenantId = currentTenantId();
+  await tx.$executeRawUnsafe(`SELECT pg_advisory_xact_lock(hashtext($1))`, `salesgrid:${tenantId}:${kind}_number`);
+  // Identifiers come from the constant table above, never from user input; the tenant id is a bound parameter.
   const rows = await tx.$queryRawUnsafe<{ max: number | null }[]>(
-    `SELECT MAX(CAST(SUBSTRING("${spec.column}" FROM '^${spec.prefix}-[0-9]{4}-([0-9]+)$') AS BIGINT))::int AS max FROM "${spec.table}"`
+    `SELECT MAX(CAST(SUBSTRING("${spec.column}" FROM '^${spec.prefix}-[0-9]{4}-([0-9]+)$') AS BIGINT))::int AS max FROM "${spec.table}" WHERE "tenantId" = $1`,
+    tenantId
   );
   const next = (rows[0]?.max ?? 0) + 1;
   return `${spec.prefix}-${now.getFullYear()}-${String(next).padStart(spec.width, '0')}`;
