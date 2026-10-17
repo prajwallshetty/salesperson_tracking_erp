@@ -40,21 +40,27 @@ jobs:
       SALESGRID_VERSION_NAME: 1.0.${{ github.run_number }}
       HAS_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: apps/mobile/package-lock.json
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 21
           cache: gradle
 
-      - uses: android-actions/setup-android@v3
+      # GitHub's Ubuntu runners ship the Android SDK (ANDROID_HOME); add the API level this project targets.
+      - name: Android SDK packages
+        working-directory: .
+        run: |
+          SDKMANAGER="$(ls -d "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager | sort -V | tail -1)"
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0" "platform-tools"
 
       - run: npm ci
 
