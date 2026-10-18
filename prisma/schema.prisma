@@ -794,24 +794,349 @@ model Tenant {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
-  users            User[]
-  salespersons     Salesperson[]
-  clients          Client[]
-  categories       Category[]
-  products         Product[]
-  orders           Order[]
-  payments         Payment[]
-  expenses         Expense[]
-  attendances      Attendance[]
-  locationSessions LocationSession[]
-  locationPoints   LocationPoint[]
-  clientVisits     ClientVisit[]
-  auditLogs        AuditLog[]
-  notifications    Notification[]
-  idempotencyKeys  IdempotencyKey[]
-  systemSettings   SystemSetting[]
-  userAccessCodes  UserAccessCode[]
-  uploadedFiles    UploadedFile[]
+  users             User[]
+  salespersons      Salesperson[]
+  clients           Client[]
+  categories        Category[]
+  products          Product[]
+  orders            Order[]
+  payments          Payment[]
+  expenses          Expense[]
+  attendances       Attendance[]
+  locationSessions  LocationSession[]
+  locationPoints    LocationPoint[]
+  clientVisits      ClientVisit[]
+  auditLogs         AuditLog[]
+  notifications     Notification[]
+  idempotencyKeys   IdempotencyKey[]
+  systemSettings    SystemSetting[]
+  userAccessCodes   UserAccessCode[]
+  uploadedFiles     UploadedFile[]
+  businessProfile   BusinessProfile?
+  documentSequences DocumentSequence[]
+  quotations        Quotation[]
+  invoices          Invoice[]
+  invoicePayments   InvoicePayment[]
 
   @@map("tenants")
+}
+
+// ---------------------------------------------------------------------------------------------
+// Quotations & invoices (additive: new tables and enums only)
+// ---------------------------------------------------------------------------------------------
+
+enum QuotationStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  /// Superseded by a newer revision of the same quotation (kept for history).
+  REVISED
+}
+
+/// OVERDUE is not stored: it is derived from dueDate for ISSUED / PARTIALLY_PAID invoices.
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PARTIALLY_PAID
+  PAID
+  CANCELLED
+}
+
+enum InvoicePaymentStatus {
+  RECORDED
+  VOIDED
+}
+
+/// NONE = no GST charged, INTRA = CGST + SGST (same state), INTER = IGST.
+enum TaxMode {
+  NONE
+  INTRA
+  INTER
+}
+
+enum DiscountType {
+  PERCENT
+  AMOUNT
+}
+
+enum DocumentKind {
+  QUOTATION
+  INVOICE
+  RECEIPT
+}
+
+enum SequenceYearMode {
+  NONE
+  CALENDAR
+  FISCAL
+}
+
+/// One row per company: the verified business details printed on quotations, invoices and receipts.
+/// Nothing is pre-filled; the administrator enters the real values in Settings → Business details.
+model BusinessProfile {
+  id                    String   @id @default(uuid())
+  tenantId              String   @unique @default("00000000-0000-0000-0000-000000000001")
+  displayName           String   @default("Bharath Interior Decor")
+  legalName             String?
+  address               String?
+  city                  String?
+  state                 String?
+  pincode               String?
+  phone                 String?
+  email                 String?
+  website               String?
+  gstin                 String?
+  pan                   String?
+  /// GST is only charged when the business has confirmed it is registered.
+  gstEnabled            Boolean  @default(false)
+  defaultTaxRate        Decimal  @default(18) @db.Decimal(5, 2)
+  roundTotal            Boolean  @default(true)
+  currency              String   @default("INR")
+  quotationValidityDays Int      @default(15)
+  defaultPaymentTerms   String?
+  invoiceDueDays        Int      @default(15)
+  quotationNotes        String?
+  quotationTerms        String?
+  invoiceNotes          String?
+  invoiceTerms          String?
+  bankAccountName       String?
+  bankName              String?
+  bankAccountNumber     String?
+  bankIfsc              String?
+  bankBranch            String?
+  upiId                 String?
+  paymentInstructions   String?
+  signatoryLabel        String?
+  updatedAt             DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@map("business_profiles")
+}
+
+/// Configurable numbering: prefix + optional year token + zero-padded counter, e.g. INV-2026-27-0001.
+model DocumentSequence {
+  id         String           @id @default(uuid())
+  tenantId   String           @default("00000000-0000-0000-0000-000000000001")
+  kind       DocumentKind
+  prefix     String
+  padding    Int              @default(4)
+  yearMode   SequenceYearMode @default(NONE)
+  /// Year token the counter currently belongs to (resets when it changes).
+  yearToken  String?
+  nextNumber Int              @default(1)
+  updatedAt  DateTime         @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, kind])
+  @@map("document_sequences")
+}
+
+model Quotation {
+  id               String          @id @default(uuid())
+  tenantId         String          @default("00000000-0000-0000-0000-000000000001")
+  /// Shared by every revision of one quotation.
+  groupId          String
+  revision         Int             @default(1)
+  number           String
+  status           QuotationStatus @default(DRAFT)
+  clientId         String?
+  customerName     String
+  customerPhone    String?
+  customerEmail    String?
+  customerAddress  String?
+  customerGstin    String?
+  customerState    String?
+  quotationDate    DateTime        @db.Date
+  validUntil       DateTime        @db.Date
+  taxMode          TaxMode         @default(NONE)
+  subtotal         Decimal         @default(0) @db.Decimal(12, 2)
+  discountType     DiscountType    @default(AMOUNT)
+  discountValue    Decimal         @default(0) @db.Decimal(12, 2)
+  discountAmount   Decimal         @default(0) @db.Decimal(12, 2)
+  shippingCharge   Decimal         @default(0) @db.Decimal(12, 2)
+  otherCharges     Decimal         @default(0) @db.Decimal(12, 2)
+  chargesTaxRate   Decimal         @default(0) @db.Decimal(5, 2)
+  taxableAmount    Decimal         @default(0) @db.Decimal(12, 2)
+  cgstAmount       Decimal         @default(0) @db.Decimal(12, 2)
+  sgstAmount       Decimal         @default(0) @db.Decimal(12, 2)
+  igstAmount       Decimal         @default(0) @db.Decimal(12, 2)
+  taxAmount        Decimal         @default(0) @db.Decimal(12, 2)
+  roundOff         Decimal         @default(0) @db.Decimal(12, 2)
+  grandTotal       Decimal         @default(0) @db.Decimal(12, 2)
+  paymentTerms     String?
+  notes            String?
+  terms            String?
+  /// Business details as they were when the quotation was sent (so later settings changes do not rewrite it).
+  businessSnapshot Json?
+  sentAt           DateTime?
+  respondedAt      DateTime?
+  rejectionReason  String?
+  revisionOfId     String?
+  createdById      String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  items    QuotationItem[]
+  invoices Invoice[]
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, number, revision])
+  @@index([tenantId])
+  @@index([groupId])
+  @@index([status])
+  @@index([quotationDate])
+  @@index([clientId])
+  @@map("quotations")
+}
+
+model QuotationItem {
+  id             String       @id @default(uuid())
+  quotationId    String
+  position       Int
+  productId      String?
+  description    String
+  hsn            String?
+  quantity       Decimal      @db.Decimal(12, 3)
+  unit           String       @default("PCS")
+  rate           Decimal      @db.Decimal(12, 2)
+  discountType   DiscountType @default(PERCENT)
+  discountValue  Decimal      @default(0) @db.Decimal(12, 2)
+  discountAmount Decimal      @default(0) @db.Decimal(12, 2)
+  taxableAmount  Decimal      @default(0) @db.Decimal(12, 2)
+  taxRate        Decimal      @default(0) @db.Decimal(5, 2)
+  cgstAmount     Decimal      @default(0) @db.Decimal(12, 2)
+  sgstAmount     Decimal      @default(0) @db.Decimal(12, 2)
+  igstAmount     Decimal      @default(0) @db.Decimal(12, 2)
+  lineTotal      Decimal      @default(0) @db.Decimal(12, 2)
+
+  quotation Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+
+  @@index([quotationId])
+  @@map("quotation_items")
+}
+
+model Invoice {
+  id                String        @id @default(uuid())
+  tenantId          String        @default("00000000-0000-0000-0000-000000000001")
+  /// Assigned when the invoice is issued (drafts have none), so issued numbers are gapless.
+  number            String?
+  status            InvoiceStatus @default(DRAFT)
+  clientId          String?
+  quotationId       String?
+  /// Set on a corrected copy: the invoice it replaces.
+  correctsInvoiceId String?
+  customerName      String
+  customerPhone     String?
+  customerEmail     String?
+  customerAddress   String?
+  customerGstin     String?
+  customerState     String?
+  invoiceDate       DateTime      @db.Date
+  dueDate           DateTime      @db.Date
+  taxMode           TaxMode       @default(NONE)
+  subtotal          Decimal       @default(0) @db.Decimal(12, 2)
+  discountType      DiscountType  @default(AMOUNT)
+  discountValue     Decimal       @default(0) @db.Decimal(12, 2)
+  discountAmount    Decimal       @default(0) @db.Decimal(12, 2)
+  shippingCharge    Decimal       @default(0) @db.Decimal(12, 2)
+  otherCharges      Decimal       @default(0) @db.Decimal(12, 2)
+  chargesTaxRate    Decimal       @default(0) @db.Decimal(5, 2)
+  taxableAmount     Decimal       @default(0) @db.Decimal(12, 2)
+  cgstAmount        Decimal       @default(0) @db.Decimal(12, 2)
+  sgstAmount        Decimal       @default(0) @db.Decimal(12, 2)
+  igstAmount        Decimal       @default(0) @db.Decimal(12, 2)
+  taxAmount         Decimal       @default(0) @db.Decimal(12, 2)
+  roundOff          Decimal       @default(0) @db.Decimal(12, 2)
+  grandTotal        Decimal       @default(0) @db.Decimal(12, 2)
+  /// Sum of RECORDED payments; maintained in the same transaction that records or voids a payment.
+  amountPaid        Decimal       @default(0) @db.Decimal(12, 2)
+  paymentTerms      String?
+  notes             String?
+  terms             String?
+  /// Business details frozen at issue time.
+  businessSnapshot  Json?
+  issuedAt          DateTime?
+  issuedById        String?
+  cancelledAt       DateTime?
+  cancelledById     String?
+  cancelReason      String?
+  createdById       String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  items     InvoiceItem[]
+  payments  InvoicePayment[]
+  quotation Quotation?       @relation(fields: [quotationId], references: [id])
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, number])
+  @@index([tenantId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([invoiceDate])
+  @@index([clientId])
+  @@index([quotationId])
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id             String       @id @default(uuid())
+  invoiceId      String
+  position       Int
+  productId      String?
+  description    String
+  hsn            String?
+  quantity       Decimal      @db.Decimal(12, 3)
+  unit           String       @default("PCS")
+  rate           Decimal      @db.Decimal(12, 2)
+  discountType   DiscountType @default(PERCENT)
+  discountValue  Decimal      @default(0) @db.Decimal(12, 2)
+  discountAmount Decimal      @default(0) @db.Decimal(12, 2)
+  taxableAmount  Decimal      @default(0) @db.Decimal(12, 2)
+  taxRate        Decimal      @default(0) @db.Decimal(5, 2)
+  cgstAmount     Decimal      @default(0) @db.Decimal(12, 2)
+  sgstAmount     Decimal      @default(0) @db.Decimal(12, 2)
+  igstAmount     Decimal      @default(0) @db.Decimal(12, 2)
+  lineTotal      Decimal      @default(0) @db.Decimal(12, 2)
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@map("invoice_items")
+}
+
+model InvoicePayment {
+  id             String               @id @default(uuid())
+  tenantId       String               @default("00000000-0000-0000-0000-000000000001")
+  invoiceId      String
+  receiptNumber  String
+  amount         Decimal              @db.Decimal(12, 2)
+  paidOn         DateTime             @db.Date
+  method         PaymentMethod        @default(CASH)
+  reference      String?
+  notes          String?
+  status         InvoicePaymentStatus @default(RECORDED)
+  voidedAt       DateTime?
+  voidedById     String?
+  voidReason     String?
+  /// Client-generated key: submitting the same payment twice records it once.
+  idempotencyKey String
+  createdById    String?
+  createdAt      DateTime             @default(now())
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, receiptNumber])
+  @@unique([tenantId, idempotencyKey])
+  @@index([tenantId])
+  @@index([invoiceId])
+  @@map("invoice_payments")
 }

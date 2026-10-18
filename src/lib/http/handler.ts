@@ -22,7 +22,7 @@ export interface AuthedContext<P = Record<string, string>> extends RequestContex
   user: AuthenticatedUser;
 }
 
-interface RouteOptions {
+export interface RouteOptions {
   /** Restrict to these roles (SUPER_ADMIN always passes — legacy `requireRole`). */
   roles?: Role[];
   /** Manager-only permission flag. Admins pass; salespersons are unaffected unless `roles` excludes them. */

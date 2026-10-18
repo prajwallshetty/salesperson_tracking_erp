@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import {
   LayoutDashboard, Navigation2, Users, Building2, Package, ShoppingCart, CreditCard, FileBarChart,
-  Settings, ShieldAlert, ChevronDown, ChevronRight, LogOut, Receipt, X, MonitorSmartphone,
+  Settings, ShieldAlert, ChevronDown, ChevronRight, LogOut, Receipt, X, MonitorSmartphone, FileText, FileSpreadsheet, Building,
 } from 'lucide-react';
 import { useSession } from '@/components/shared/SessionProvider';
 import { useSocket } from '@/components/shared/RealtimeProvider';
@@ -73,6 +73,25 @@ const NAV: { group: string; items: NavItem[] }[] = [
         ],
       },
       {
+        title: 'Quotations',
+        icon: FileText,
+        permission: 'canViewPayments',
+        children: [
+          { title: 'All Quotations', href: '/quotations' },
+          { title: 'New Quotation', href: '/quotations/new' },
+        ],
+      },
+      {
+        title: 'Invoices',
+        icon: FileSpreadsheet,
+        permission: 'canViewPayments',
+        children: [
+          { title: 'All Invoices', href: '/invoices' },
+          { title: 'Overdue', href: '/invoices?status=OVERDUE' },
+          { title: 'New Invoice', href: '/invoices/new' },
+        ],
+      },
+      {
         title: 'Collections',
         icon: CreditCard,
         permission: 'canViewPayments',
@@ -97,6 +116,7 @@ const NAV: { group: string; items: NavItem[] }[] = [
     group: 'ADMINISTRATION',
     items: [
       { title: 'Settings', href: '/settings', icon: Settings, adminOnly: true },
+      { title: 'Business Details', href: '/settings/business', icon: Building, adminOnly: true },
       { title: 'Audit Logs', href: '/audit-logs', icon: ShieldAlert },
     ],
   },

@@ -13,10 +13,14 @@ const securityHeaders = [
 const nextConfig = {
   reactStrictMode: false, // Leaflet maps do not tolerate double-mount in dev
   poweredByHeader: false,
+  // Lets a production build run beside a running dev server (NEXT_DIST_DIR=.next-build npm run build).
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   eslint: { dirs: ['src', 'tests', 'prisma', 'scripts'] },
   experimental: {
     // pdfkit reads its font metrics from disk at runtime and must not be bundled.
     serverComponentsExternalPackages: ['pdfkit', '@prisma/client', 'bcryptjs', 'redis', '@redis/client'],
+    // The logo printed on quotation, invoice and receipt PDFs is read from disk at runtime.
+    outputFileTracingIncludes: { '/api/**/*': ['./public/brand/**/*'] },
   },
   async headers() {
     const headers = [...securityHeaders];

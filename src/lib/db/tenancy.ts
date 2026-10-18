@@ -64,6 +64,8 @@ export const CHILD_MODELS: Record<string, string> = {
   ClientAssignment: 'client',
   ManagerSalesperson: 'manager',
   ManagerPermission: 'user',
+  QuotationItem: 'quotation',
+  InvoiceItem: 'invoice',
 };
 /** Models that are intentionally global. */
 export const GLOBAL_MODELS = new Set(['Tenant']);

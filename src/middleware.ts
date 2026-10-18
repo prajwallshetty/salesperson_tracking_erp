@@ -17,6 +17,8 @@ const CONSOLE_PREFIXES = [
   '/products',
   '/orders',
   '/payments',
+  '/quotations',
+  '/invoices',
   '/expenses',
   '/reports',
   '/settings',

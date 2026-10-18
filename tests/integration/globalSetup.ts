@@ -31,7 +31,11 @@ export async function setup() {
   execSync('npx prisma migrate reset --force --skip-seed --skip-generate', { env, stdio: 'inherit' });
   execSync('npx tsx prisma/seed.ts', { env, stdio: 'inherit' });
 
-  const child = spawn('npx', ['tsx', 'server.ts'], { env, stdio: ['ignore', 'pipe', 'pipe'], detached: true });
+  // Windows cannot spawn npx directly and has no process groups; elsewhere the server gets its own group so teardown can stop it.
+  const win = process.platform === 'win32';
+  const child = win
+    ? spawn('npx tsx server.ts', { env, stdio: ['ignore', 'pipe', 'pipe'], shell: true })
+    : spawn('npx', ['tsx', 'server.ts'], { env, stdio: ['ignore', 'pipe', 'pipe'], detached: true });
   server = child;
   child.stdout?.on('data', (d) => process.env.DEBUG_SERVER && process.stdout.write(d));
   child.stderr?.on('data', (d) => process.env.DEBUG_SERVER && process.stderr.write(d));
@@ -52,7 +56,8 @@ export async function setup() {
 export async function teardown() {
   if (server?.pid) {
     try {
-      process.kill(-server.pid, 'SIGTERM');
+      if (process.platform === 'win32') execSync(`taskkill /pid ${server.pid} /T /F`, { stdio: 'ignore' });
+      else process.kill(-server.pid, 'SIGTERM');
     } catch {
       /* already exited */
     }

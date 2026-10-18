@@ -25,7 +25,7 @@ export default function Button({
   switch (variant) {
     case 'primary':
       variantClasses =
-        'bg-[#000000] text-white hover:bg-[#111F36] active:bg-[#050C17] border border-[#000000] disabled:bg-[#80909D] disabled:border-[#80909D] shadow-none';
+        'bg-[#000000] text-white hover:bg-[#1A1A1A] active:bg-[#000000] border border-[#000000] disabled:bg-[#80909D] disabled:border-[#80909D] shadow-none';
       break;
     case 'secondary':
       variantClasses =

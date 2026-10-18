@@ -68,3 +68,4 @@ playwright-report/
 # Android shell (apps/mobile)
 apps/mobile/www/app-config.js
 apps/mobile/android/keystore.properties
+.next-build/
