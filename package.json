@@ -25,7 +25,9 @@
     "db:seed": "tsx prisma/seed.ts",
     "tenant": "tsx scripts/tenant.ts",
     "inventory": "tsx scripts/inventory.ts",
-    "check:env": "tsx scripts/check-env.ts"
+    "check:env": "tsx scripts/check-env.ts",
+    "assets": "npm --prefix apps/mobile run assets",
+    "assets:generate": "node apps/mobile/scripts/make-assets.mjs && npm --prefix apps/mobile run assets"
   },
   "dependencies": {
     "@aparajita/capacitor-biometric-auth": "10.0.0",

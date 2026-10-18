@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
     <application
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
@@ -21,8 +20,14 @@
             </intent-filter>
         </activity>
 
-        <receiver android:name="com.capacitorjs.plugins.localnotifications.LocalNotificationRestoreReceiver" tools:node="remove" />
-        <receiver android:name="com.capgo.capacitor_background_geolocation.GeofenceBroadcastReceiver" tools:node="remove" />
+        <receiver
+            android:name="com.capacitorjs.plugins.localnotifications.LocalNotificationRestoreReceiver"
+            tools:node="remove"
+        />
+        <receiver
+            android:name="com.capgo.capacitor_background_geolocation.GeofenceBroadcastReceiver"
+            tools:node="remove"
+        />
         <receiver android:name="com.capgo.capacitor_background_geolocation.GeofenceBootReceiver" tools:node="remove" />
 
         <provider
