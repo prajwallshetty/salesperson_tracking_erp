@@ -13,7 +13,7 @@ export default function StatusBadge({ status, label, className = '' }: StatusBad
   let styles = 'bg-[#F3F5F6] text-[#586570] border-[#CBD2D7]';
 
   if (['VERIFIED', 'COMPLETED', 'ON_DUTY', 'DELIVERED', 'CONFIRMED', 'ACTIVE', 'ORDER_TAKEN'].includes(norm)) {
-    styles = 'bg-[#E6F4DD] text-[#2E6819] border-[#B4E39C]';
+    styles = 'bg-[#E6F4DD] text-[#2E6819] border-[#D4AF37]';
   } else if (['PENDING', 'SUBMITTED', 'DRAFT', 'FOLLOW_UP_REQUIRED'].includes(norm)) {
     styles = 'bg-[#F3F5F6] text-[#475569] border-[#CBD2D7]';
   } else if (['PROCESSING', 'DISPATCHED', 'SYNCING', 'PAYMENT_COLLECTED'].includes(norm)) {

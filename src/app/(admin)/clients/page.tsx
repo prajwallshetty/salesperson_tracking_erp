@@ -157,7 +157,7 @@ export default function ClientsPage() {
                 placeholder="Search clients, phone, city..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-8 pr-4 py-1.5 text-xs bg-white border border-[#CBD2D7] rounded-lg text-[#0B1320] focus:ring-1 focus:ring-[#081224] focus:outline-none w-full sm:w-72"
+                className="pl-8 pr-4 py-1.5 text-xs bg-white border border-[#CBD2D7] rounded-lg text-[#0B1320] focus:ring-1 focus:ring-[#000000] focus:outline-none w-full sm:w-72"
               />
             </div>
 
@@ -166,7 +166,7 @@ export default function ClientsPage() {
                 type="checkbox"
                 checked={pendingOnly}
                 onChange={(e) => setPendingOnly(e.target.checked)}
-                className="rounded text-[#081224] focus:ring-[#081224]"
+                className="rounded text-[#000000] focus:ring-[#000000]"
               />
               <span>With Outstanding Balance Only</span>
             </label>
@@ -255,7 +255,7 @@ export default function ClientsPage() {
 
         {/* Client Detail Drawer / Modal */}
         {selectedClientId && (
-          <div className="fixed inset-0 bg-[#081224]/30 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-[#000000]/30 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
             <div className="bg-white border border-[#CBD2D7] rounded-xl max-w-3xl w-full p-6 shadow-xl max-h-[90vh] overflow-y-auto animate-in fade-in">
               <div className="flex items-center justify-between pb-4 border-b border-[#E2E7EC]">
                 <div>
@@ -312,7 +312,7 @@ export default function ClientsPage() {
                         onClick={() => setDetailTab(tab.id)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                           detailTab === tab.id
-                            ? 'bg-[#081224] text-white'
+                            ? 'bg-[#000000] text-white'
                             : 'text-[#586570] hover:text-[#0B1320] hover:bg-[#F3F5F6]'
                         }`}
                       >
@@ -451,7 +451,7 @@ export default function ClientsPage() {
 
         {/* Add Client Modal */}
         {showAddModal && (
-          <div className="fixed inset-0 bg-[#081224]/30 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-[#000000]/30 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
             <div className="bg-white border border-[#CBD2D7] rounded-xl max-w-xl w-full p-6 shadow-xl max-h-[90vh] overflow-y-auto animate-in fade-in">
               <div className="flex items-center justify-between pb-3 border-b border-[#E2E7EC]">
                 <h3 className="text-base font-bold text-[#0B1320]">Register New Client</h3>
@@ -470,7 +470,7 @@ export default function ClientsPage() {
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       placeholder="e.g. Metro Mobile Care"
-                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#081224]"
+                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#000000]"
                     />
                   </div>
                   <div>
@@ -481,7 +481,7 @@ export default function ClientsPage() {
                       value={formData.contactPerson}
                       onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
                       placeholder="Store Manager"
-                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#081224]"
+                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#000000]"
                     />
                   </div>
                 </div>
@@ -495,7 +495,7 @@ export default function ClientsPage() {
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       placeholder="9845011223"
-                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#081224]"
+                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#000000]"
                     />
                   </div>
                   <div>
@@ -505,7 +505,7 @@ export default function ClientsPage() {
                       value={formData.gstNumber}
                       onChange={(e) => setFormData({ ...formData, gstNumber: e.target.value })}
                       placeholder="29ABCDE1234F1Z5"
-                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#081224]"
+                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#000000]"
                     />
                   </div>
                 </div>
@@ -518,7 +518,7 @@ export default function ClientsPage() {
                     value={formData.address}
                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                     placeholder="Shop #12, Market Road"
-                    className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#081224]"
+                    className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#000000]"
                   />
                 </div>
 
@@ -530,7 +530,7 @@ export default function ClientsPage() {
                       required
                       value={formData.city}
                       onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#081224]"
+                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#000000]"
                     />
                   </div>
                   <div>
@@ -540,7 +540,7 @@ export default function ClientsPage() {
                       required
                       value={formData.state}
                       onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#081224]"
+                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#000000]"
                     />
                   </div>
                   <div>
@@ -550,7 +550,7 @@ export default function ClientsPage() {
                       required
                       value={formData.pincode}
                       onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
-                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#081224]"
+                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#000000]"
                     />
                   </div>
                 </div>
@@ -564,7 +564,7 @@ export default function ClientsPage() {
                       required
                       value={formData.latitude}
                       onChange={(e) => setFormData({ ...formData, latitude: parseFloat(e.target.value) })}
-                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#081224]"
+                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#000000]"
                     />
                   </div>
                   <div>
@@ -575,7 +575,7 @@ export default function ClientsPage() {
                       required
                       value={formData.longitude}
                       onChange={(e) => setFormData({ ...formData, longitude: parseFloat(e.target.value) })}
-                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#081224]"
+                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#000000]"
                     />
                   </div>
                 </div>
@@ -587,7 +587,7 @@ export default function ClientsPage() {
                       type="number"
                       value={formData.creditLimit}
                       onChange={(e) => setFormData({ ...formData, creditLimit: parseFloat(e.target.value) })}
-                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#081224]"
+                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#000000]"
                     />
                   </div>
                   <div>
@@ -596,7 +596,7 @@ export default function ClientsPage() {
                       type="number"
                       value={formData.openingBalance}
                       onChange={(e) => setFormData({ ...formData, openingBalance: parseFloat(e.target.value) })}
-                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#081224]"
+                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#000000]"
                     />
                   </div>
                 </div>

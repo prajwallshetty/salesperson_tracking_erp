@@ -194,9 +194,9 @@ export default function AccessCodesPage() {
               setShowGenerateModal(true);
               setGenerateError(null);
             }}
-            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold bg-[#081224] text-white rounded-lg hover:bg-black transition-colors shrink-0"
+            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold bg-[#000000] text-white rounded-lg hover:bg-black transition-colors shrink-0"
           >
-            <Sparkles className="w-3.5 h-3.5 text-[#B4E39C]" />
+            <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
             <span>Generate New Access Code</span>
           </button>
         </div>
@@ -210,7 +210,7 @@ export default function AccessCodesPage() {
               placeholder="Search by staff name, employee code..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 text-xs bg-[#F5F7F8] border border-[#CBD2D7] rounded-lg text-[#0B1320] focus:outline-none focus:border-[#081224]"
+              className="w-full pl-9 pr-3 py-1.5 text-xs bg-[#F5F7F8] border border-[#CBD2D7] rounded-lg text-[#0B1320] focus:outline-none focus:border-[#000000]"
             />
           </div>
           <span className="text-xs text-[#586570] font-medium">
@@ -279,7 +279,7 @@ export default function AccessCodesPage() {
                               Locked (5 Failed)
                             </span>
                           ) : item.status === 'ACTIVE' ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#E6F4DD] text-[#2E6819] border border-[#B4E39C]">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#E6F4DD] text-[#2E6819] border border-[#D4AF37]">
                               <span className="w-1.5 h-1.5 rounded-full bg-[#2E6819]" />
                               Active
                             </span>
@@ -366,7 +366,7 @@ export default function AccessCodesPage() {
                 <select
                   value={selectedUserId}
                   onChange={(e) => setSelectedUserId(e.target.value)}
-                  className="w-full text-xs p-2.5 bg-[#F5F7F8] border border-[#CBD2D7] rounded-lg focus:outline-none focus:border-[#081224]"
+                  className="w-full text-xs p-2.5 bg-[#F5F7F8] border border-[#CBD2D7] rounded-lg focus:outline-none focus:border-[#000000]"
                 >
                   <option value="">-- Choose Staff Member --</option>
                   {salespersons.map((sp) => (
@@ -386,7 +386,7 @@ export default function AccessCodesPage() {
                   onChange={(e) =>
                     setExpiresInDays(e.target.value === 'never' ? undefined : Number(e.target.value))
                   }
-                  className="w-full text-xs p-2.5 bg-[#F5F7F8] border border-[#CBD2D7] rounded-lg focus:outline-none focus:border-[#081224]"
+                  className="w-full text-xs p-2.5 bg-[#F5F7F8] border border-[#CBD2D7] rounded-lg focus:outline-none focus:border-[#000000]"
                 >
                   <option value="7">7 Days</option>
                   <option value="30">30 Days (Recommended)</option>
@@ -414,7 +414,7 @@ export default function AccessCodesPage() {
               <button
                 onClick={handleGenerate}
                 disabled={generating}
-                className="px-4 py-2 text-xs font-semibold bg-[#081224] text-white rounded-lg hover:bg-black disabled:opacity-50"
+                className="px-4 py-2 text-xs font-semibold bg-[#000000] text-white rounded-lg hover:bg-black disabled:opacity-50"
               >
                 {generating ? 'Generating...' : 'Generate Code'}
               </button>
@@ -451,18 +451,18 @@ export default function AccessCodesPage() {
                 <span className="text-xs uppercase font-semibold text-[#586570] tracking-wider block mb-1">
                   Access Code
                 </span>
-                <span className="text-3xl font-extrabold font-mono tracking-widest text-[#081224] select-all">
+                <span className="text-3xl font-extrabold font-mono tracking-widest text-[#000000] select-all">
                   {oneTimeCodeData.code}
                 </span>
 
                 <div className="mt-4 flex items-center justify-center">
                   <button
                     onClick={handleCopyCode}
-                    className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold bg-[#081224] text-white rounded-lg hover:bg-black transition-colors"
+                    className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold bg-[#000000] text-white rounded-lg hover:bg-black transition-colors"
                   >
                     {copied ? (
                       <>
-                        <Check className="w-4 h-4 text-[#B4E39C]" />
+                        <Check className="w-4 h-4 text-[#D4AF37]" />
                         <span>Copied to Clipboard!</span>
                       </>
                     ) : (
@@ -489,7 +489,7 @@ export default function AccessCodesPage() {
             <div className="px-6 py-3 border-t border-[#CBD2D7] bg-[#F5F7F8] flex justify-end">
               <button
                 onClick={() => setOneTimeCodeData(null)}
-                className="px-5 py-2 text-xs font-bold bg-[#081224] text-white rounded-lg hover:bg-black"
+                className="px-5 py-2 text-xs font-bold bg-[#000000] text-white rounded-lg hover:bg-black"
               >
                 I Have Securely Saved the Code
               </button>
@@ -517,7 +517,7 @@ export default function AccessCodesPage() {
                   value={revokeReason}
                   onChange={(e) => setRevokeReason(e.target.value)}
                   placeholder="e.g. Lost mobile device or role change"
-                  className="w-full text-xs p-2.5 bg-[#F5F7F8] border border-[#CBD2D7] rounded-lg focus:outline-none focus:border-[#081224]"
+                  className="w-full text-xs p-2.5 bg-[#F5F7F8] border border-[#CBD2D7] rounded-lg focus:outline-none focus:border-[#000000]"
                 />
               </div>
 

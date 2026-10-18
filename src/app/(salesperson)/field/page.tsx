@@ -51,7 +51,7 @@ export default function FieldHome() {
     setMessage(
       res.offline
         ? { tone: 'warning', text: 'No connection — your Start Day is saved on this device and will sync automatically. GPS points are buffered meanwhile.' }
-        : { tone: 'success', text: res.locationError ? 'Day started without a location fix. Tracking will begin once GPS is available.' : 'You are on duty. Location tracking is active while SalesGrid is open.' }
+        : { tone: 'success', text: res.locationError ? 'Day started without a location fix. Tracking will begin once GPS is available.' : 'You are on duty. Location tracking is active while Bharath Interior Decor is open.' }
     );
   };
 
@@ -129,7 +129,7 @@ export default function FieldHome() {
           <p className="text-[11px] text-[#80909D] mt-2">
             {isNativeApp()
               ? 'Your location is recorded only while you are on duty, including when the app is in the background. A notification shows while it is on, and it stops the moment you end your day.'
-              : 'Your location is recorded only while you are on duty and SalesGrid is open. It stops the moment you end your day.'}
+              : 'Your location is recorded only while you are on duty and Bharath Interior Decor is open. It stops the moment you end your day.'}
           </p>
         )}
       </Card>
@@ -179,7 +179,7 @@ export default function FieldHome() {
         )}
       </Card>
 
-      <Link href="/field/collect" className="flex items-center justify-center gap-2 min-h-[48px] rounded-2xl bg-[#E6F4DD] border border-[#B4E39C] text-[#2E6819] text-sm font-bold">
+      <Link href="/field/collect" className="flex items-center justify-center gap-2 min-h-[48px] rounded-2xl bg-[#E6F4DD] border border-[#D4AF37] text-[#2E6819] text-sm font-bold">
         <CreditCard className="w-4 h-4" /> Collect customer payment
       </Link>
 
@@ -190,7 +190,7 @@ export default function FieldHome() {
           { href: '/field/expenses', title: 'Expenses', sub: 'Travel, meals, fuel' },
           { href: '/field/more/route', title: "Today's route", sub: 'GPS & visits' },
         ].map((a) => (
-          <Link key={a.href} href={a.href} className="bg-white border border-[#CBD2D7] rounded-2xl p-4 hover:border-[#081224]">
+          <Link key={a.href} href={a.href} className="bg-white border border-[#CBD2D7] rounded-2xl p-4 hover:border-[#000000]">
             <p className="text-sm font-bold text-[#0B1320]">{a.title}</p>
             <p className="text-[11px] text-[#586570] mt-0.5">{a.sub}</p>
           </Link>

@@ -17,7 +17,7 @@ if (server.protocol !== 'https:' && !allowHttp) {
 
 const config: CapacitorConfig = {
   appId: 'com.salesgrid.app',
-  appName: 'SalesGrid',
+  appName: 'Bharath Interior Decor',
   webDir: 'www',
   server: {
     url: `${server.origin}/`,
@@ -35,12 +35,12 @@ const config: CapacitorConfig = {
     SplashScreen: {
       launchShowDuration: 2500,
       launchAutoHide: true,
-      backgroundColor: '#081224',
+      backgroundColor: '#000000',
       showSpinner: false,
     },
     LocalNotifications: {
       smallIcon: 'ic_stat_salesgrid',
-      iconColor: '#081224',
+      iconColor: '#000000',
     },
     SystemBars: {
       insetsHandling: 'css',

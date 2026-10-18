@@ -107,7 +107,7 @@ export default function SettingsPage() {
             onClick={() => setActiveTab('system')}
             className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
               activeTab === 'system'
-                ? 'bg-[#081224] text-white border-[#081224]'
+                ? 'bg-[#000000] text-white border-[#000000]'
                 : 'bg-white text-[#586570] border-[#CBD2D7] hover:bg-[#F3F5F6]'
             }`}
           >
@@ -117,7 +117,7 @@ export default function SettingsPage() {
             onClick={() => setActiveTab('roles')}
             className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
               activeTab === 'roles'
-                ? 'bg-[#081224] text-white border-[#081224]'
+                ? 'bg-[#000000] text-white border-[#000000]'
                 : 'bg-white text-[#586570] border-[#CBD2D7] hover:bg-[#F3F5F6]'
             }`}
           >
@@ -129,7 +129,7 @@ export default function SettingsPage() {
         {activeTab === 'system' && (
           <div className="bg-white border border-[#CBD2D7] rounded-xl p-6 space-y-6">
             {statusMsg && (
-              <div className="p-3 bg-[#E6F4DD] border border-[#B4E39C] text-[#2E6819] text-xs font-medium rounded-lg flex items-center gap-2">
+              <div className="p-3 bg-[#E6F4DD] border border-[#D4AF37] text-[#2E6819] text-xs font-medium rounded-lg flex items-center gap-2">
                 <Check className="w-4 h-4" />
                 <span>{statusMsg}</span>
               </div>
@@ -148,7 +148,7 @@ export default function SettingsPage() {
                       <select
                         value={s.value}
                         onChange={(e) => handleSettingChange(s.key, e.target.value)}
-                        className="w-full px-3 py-1.5 bg-white border border-[#CBD2D7] rounded-lg text-xs font-semibold text-[#0B1320] focus:ring-1 focus:ring-[#081224] focus:outline-none"
+                        className="w-full px-3 py-1.5 bg-white border border-[#CBD2D7] rounded-lg text-xs font-semibold text-[#0B1320] focus:ring-1 focus:ring-[#000000] focus:outline-none"
                       >
                         <option value="true">Enabled (true)</option>
                         <option value="false">Disabled (false)</option>
@@ -158,7 +158,7 @@ export default function SettingsPage() {
                         type="text"
                         value={s.value}
                         onChange={(e) => handleSettingChange(s.key, e.target.value)}
-                        className="w-full px-3 py-1.5 bg-white border border-[#CBD2D7] rounded-lg text-xs text-[#0B1320] font-semibold focus:ring-1 focus:ring-[#081224] focus:outline-none"
+                        className="w-full px-3 py-1.5 bg-white border border-[#CBD2D7] rounded-lg text-xs text-[#0B1320] font-semibold focus:ring-1 focus:ring-[#000000] focus:outline-none"
                       />
                     )}
                   </div>
@@ -204,7 +204,7 @@ export default function SettingsPage() {
                           type="checkbox"
                           checked={Boolean(val)}
                           onChange={() => handleTogglePermission(p.userId, perm, Boolean(val))}
-                          className="rounded text-[#081224] focus:ring-[#081224]"
+                          className="rounded text-[#000000] focus:ring-[#000000]"
                         />
                         <span className="capitalize">{perm.replace(/_/g, ' ')}</span>
                       </label>

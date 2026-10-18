@@ -39,7 +39,7 @@ export default function NativeShell() {
         .then((r) => (r.ok ? r.json() : null))
         .catch(() => null);
       if (!cancelled && cfg && isBelowMinimumBuild(info.build, cfg.android?.minBuild)) setUpdate({ url: cfg.android.updateUrl });
-    })().catch((e) => console.warn('SalesGrid native bridge:', e));
+    })().catch((e) => console.warn('Bharath Interior Decor native bridge:', e));
     return () => {
       cancelled = true;
     };
@@ -47,11 +47,11 @@ export default function NativeShell() {
 
   if (update) {
     return (
-      <div role="alertdialog" aria-label="Update required" className="fixed inset-0 z-[100] bg-[#081224] text-white flex flex-col items-center justify-center p-6 text-center">
+      <div role="alertdialog" aria-label="Update required" className="fixed inset-0 z-[100] bg-[#000000] text-white flex flex-col items-center justify-center p-6 text-center">
         <p className="text-lg font-bold">Update required</p>
-        <p className="text-sm text-white/80 mt-2 max-w-xs">This version of the SalesGrid app is no longer supported. Install the latest version to continue.</p>
+        <p className="text-sm text-white/80 mt-2 max-w-xs">This version of the Bharath Interior Decor app is no longer supported. Install the latest version to continue.</p>
         {update.url ? (
-          <a href={update.url} className="mt-5 px-5 py-2.5 rounded-xl bg-[#B4E39C] text-[#081224] font-semibold">Get the update</a>
+          <a href={update.url} className="mt-5 px-5 py-2.5 rounded-xl bg-[#D4AF37] text-[#000000] font-semibold">Get the update</a>
         ) : (
           <p className="text-xs text-white/60 mt-5">Ask your administrator for the new app.</p>
         )}

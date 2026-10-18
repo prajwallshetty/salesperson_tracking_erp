@@ -63,7 +63,7 @@ export default function AttendancePage() {
             <select
               value={salespersonId}
               onChange={(e) => setSalespersonId(e.target.value)}
-              className="px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg text-xs font-semibold text-[#0B1320] focus:ring-1 focus:ring-[#081224] focus:outline-none"
+              className="px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg text-xs font-semibold text-[#0B1320] focus:ring-1 focus:ring-[#000000] focus:outline-none"
             >
               <option value="">All Sales Representatives</option>
               {salespersons.map((s) => (

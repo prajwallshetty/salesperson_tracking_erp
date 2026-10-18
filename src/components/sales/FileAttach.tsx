@@ -27,7 +27,7 @@ export default function FileAttach({ label, value, onChange, disabled }: { label
     <div className="space-y-1.5">
       <p className="text-xs font-semibold text-[#0B1320]">{label}</p>
       {value ? (
-        <div className="flex items-center justify-between rounded-xl border border-[#B4E39C] bg-[#E6F4DD] px-3 py-2 text-xs text-[#2E6819]">
+        <div className="flex items-center justify-between rounded-xl border border-[#D4AF37] bg-[#E6F4DD] px-3 py-2 text-xs text-[#2E6819]">
           <DocLink href={value} className="underline font-semibold">Attached — view</DocLink>
           <button type="button" onClick={() => onChange('')} className="font-semibold">Remove</button>
         </div>

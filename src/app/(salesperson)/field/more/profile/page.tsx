@@ -35,7 +35,7 @@ export default function Profile() {
     <div className="space-y-3">
       <BackHeader title="Profile" />
       <Card className="text-center">
-        <div className="w-14 h-14 rounded-full bg-[#081224] text-[#B4E39C] font-bold flex items-center justify-center mx-auto">{user?.name?.slice(0, 2).toUpperCase()}</div>
+        <div className="w-14 h-14 rounded-full bg-[#000000] text-[#D4AF37] font-bold flex items-center justify-center mx-auto">{user?.name?.slice(0, 2).toUpperCase()}</div>
         <p className="text-base font-bold mt-2">{user?.name}</p>
         <p className="text-xs text-[#586570]">{user?.employeeCode} · {user?.territory}</p>
         <p className="text-xs text-[#586570]">{user?.phone} · {user?.email}</p>
@@ -43,7 +43,7 @@ export default function Profile() {
       <Card>
         <p className="text-[11px] font-bold uppercase tracking-wider text-[#80909D]">Location privacy</p>
         <ul className="text-xs text-[#0B1320] mt-2 space-y-1.5 list-disc pl-4">
-          <li>Location is recorded only while you are on duty and SalesGrid is open on this device.</li>
+          <li>Location is recorded only while you are on duty and Bharath Interior Decor is open on this device.</li>
           <li>Tracking stops immediately when you tap End Day or sign out.</li>
           <li>Locations are used for route distance, visit verification and territory operations.</li>
         </ul>

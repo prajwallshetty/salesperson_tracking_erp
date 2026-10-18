@@ -48,7 +48,7 @@ export const POST = publicRoute(
     const user = await prismaRoot.user.findUnique({ where: { id: userId }, include: { salespersonProfile: true, tenant: true } });
     if (!user) return json({ error: 'User not found' }, 404);
     if (user.status !== UserStatus.ACTIVE) return json({ error: 'Account has been deactivated. Contact your administrator.' }, 403);
-    if (!isTenantUsable(user.tenant)) return json({ error: "Your company's SalesGrid subscription is not active." }, 403);
+    if (!isTenantUsable(user.tenant)) return json({ error: "Your company's Bharath Interior Decor subscription is not active." }, 403);
     await runWithTenant(user.tenantId, () =>
       logAuditEvent({ actor: { userId: user.id, ip: ctx.ip, userAgent: ctx.userAgent }, action: 'DEV_QUICK_LOGIN', module: 'AUTH', newValue: { role: user.role } })
     );

@@ -162,7 +162,7 @@ export default function SalespersonsPage() {
               placeholder="Search by name, employee code, territory..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 pr-4 py-1.5 text-xs bg-white border border-[#CBD2D7] rounded-lg text-[#0B1320] focus:ring-1 focus:ring-[#081224] focus:outline-none w-80"
+              className="pl-8 pr-4 py-1.5 text-xs bg-white border border-[#CBD2D7] rounded-lg text-[#0B1320] focus:ring-1 focus:ring-[#000000] focus:outline-none w-80"
             />
           </div>
         </div>
@@ -282,7 +282,7 @@ export default function SalespersonsPage() {
 
         {/* Add Modal */}
         {showAddModal && (
-          <div className="fixed inset-0 bg-[#081224]/30 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-[#000000]/30 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
             <div className="bg-white border border-[#CBD2D7] rounded-xl max-w-md w-full p-6 shadow-xl animate-in fade-in">
               <div className="flex items-center justify-between pb-3 border-b border-[#E2E7EC]">
                 <h3 className="text-base font-bold text-[#0B1320]">Register Sales Representative</h3>
@@ -300,7 +300,7 @@ export default function SalespersonsPage() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. Anand Kumar"
-                    className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#081224]"
+                    className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#000000]"
                   />
                 </div>
 
@@ -312,7 +312,7 @@ export default function SalespersonsPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="anand@erp.com"
-                    className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#081224]"
+                    className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#000000]"
                   />
                 </div>
 
@@ -325,7 +325,7 @@ export default function SalespersonsPage() {
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="9876543210"
-                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#081224]"
+                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#000000]"
                     />
                   </div>
                   <div>
@@ -336,7 +336,7 @@ export default function SalespersonsPage() {
                       value={employeeCode}
                       onChange={(e) => setEmployeeCode(e.target.value)}
                       placeholder="EMP-004"
-                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#081224]"
+                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#000000]"
                     />
                   </div>
                 </div>
@@ -349,7 +349,7 @@ export default function SalespersonsPage() {
                     value={territory}
                     onChange={(e) => setTerritory(e.target.value)}
                     placeholder="e.g. Mangalore Central"
-                    className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#081224]"
+                    className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#000000]"
                   />
                 </div>
 
@@ -360,7 +360,7 @@ export default function SalespersonsPage() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#081224]"
+                    className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#000000]"
                   />
                 </div>
 

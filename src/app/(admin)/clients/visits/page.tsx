@@ -60,7 +60,7 @@ export default function ClientVisitsPage() {
             <select
               value={outcomeFilter}
               onChange={(e) => setOutcomeFilter(e.target.value)}
-              className="px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg text-xs font-semibold text-[#0B1320] focus:ring-1 focus:ring-[#081224] focus:outline-none"
+              className="px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg text-xs font-semibold text-[#0B1320] focus:ring-1 focus:ring-[#000000] focus:outline-none"
             >
               <option value="">All Visit Outcomes</option>
               <option value="ORDER_TAKEN">Order Taken</option>
@@ -126,7 +126,7 @@ export default function ClientVisitsPage() {
                                 Radius Breach (&gt;100m)
                               </span>
                             ) : (
-                              <span className="text-[10px] font-semibold bg-[#E6F4DD] text-[#2E6819] border border-[#B4E39C] px-1.5 py-0.5 rounded">
+                              <span className="text-[10px] font-semibold bg-[#E6F4DD] text-[#2E6819] border border-[#D4AF37] px-1.5 py-0.5 rounded">
                                 In Range
                               </span>
                             )}

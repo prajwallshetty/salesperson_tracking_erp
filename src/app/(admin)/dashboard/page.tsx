@@ -193,7 +193,7 @@ export default function DashboardPage() {
                       }}
                       formatter={(v: any) => [`₹${Number(v).toLocaleString('en-IN')}`, 'Sales']}
                     />
-                    <Bar dataKey="amount" fill="#081224" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="amount" fill="#000000" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -243,7 +243,7 @@ export default function DashboardPage() {
                       }}
                       formatter={(v: any) => [`₹${Number(v).toLocaleString('en-IN')}`, 'Collected']}
                     />
-                    <Bar dataKey="amount" fill="#B4E39C" stroke="#2E6819" strokeWidth={1} radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="amount" fill="#D4AF37" stroke="#2E6819" strokeWidth={1} radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               )}

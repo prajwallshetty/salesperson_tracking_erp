@@ -128,14 +128,14 @@ export default function ProductsPage() {
                 placeholder="Search by SKU, product name, brand..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-8 pr-4 py-1.5 text-xs bg-white border border-[#CBD2D7] rounded-lg text-[#0B1320] focus:ring-1 focus:ring-[#081224] focus:outline-none w-full sm:w-72"
+                className="pl-8 pr-4 py-1.5 text-xs bg-white border border-[#CBD2D7] rounded-lg text-[#0B1320] focus:ring-1 focus:ring-[#000000] focus:outline-none w-full sm:w-72"
               />
             </div>
 
             <select
               value={selectedCat}
               onChange={(e) => setSelectedCat(e.target.value)}
-              className="px-3 py-1.5 bg-white border border-[#CBD2D7] rounded-lg text-xs font-semibold text-[#0B1320] focus:ring-1 focus:ring-[#081224] focus:outline-none"
+              className="px-3 py-1.5 bg-white border border-[#CBD2D7] rounded-lg text-xs font-semibold text-[#0B1320] focus:ring-1 focus:ring-[#000000] focus:outline-none"
             >
               <option value="">All Categories</option>
               {categories.map((c) => (
@@ -208,7 +208,7 @@ export default function ProductsPage() {
                             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${
                               isLowStock
                                 ? 'bg-[#FDF2F2] text-[#991B1B] border-[#F8C4C4]'
-                                : 'bg-[#E6F4DD] text-[#2E6819] border-[#B4E39C]'
+                                : 'bg-[#E6F4DD] text-[#2E6819] border-[#D4AF37]'
                             }`}
                           >
                             {p.stock} {p.unit}
@@ -225,7 +225,7 @@ export default function ProductsPage() {
 
         {/* Modal */}
         {showAddModal && (
-          <div className="fixed inset-0 bg-[#081224]/30 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-[#000000]/30 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
             <div className="bg-white border border-[#CBD2D7] rounded-xl max-w-lg w-full p-6 shadow-xl max-h-[90vh] overflow-y-auto animate-in fade-in">
               <div className="flex items-center justify-between pb-3 border-b border-[#E2E7EC]">
                 <h3 className="text-base font-bold text-[#0B1320]">Add New Catalog Item</h3>
@@ -243,7 +243,7 @@ export default function ProductsPage() {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="e.g. Samsung 45W Power Adapter"
-                    className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:ring-1 focus:ring-[#081224] focus:outline-none"
+                    className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:ring-1 focus:ring-[#000000] focus:outline-none"
                   />
                 </div>
 
@@ -256,7 +256,7 @@ export default function ProductsPage() {
                       value={formData.sku}
                       onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
                       placeholder="SAM-45W-BLK"
-                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:ring-1 focus:ring-[#081224] focus:outline-none"
+                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:ring-1 focus:ring-[#000000] focus:outline-none"
                     />
                   </div>
                   <div>
@@ -265,7 +265,7 @@ export default function ProductsPage() {
                       required
                       value={formData.categoryId}
                       onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:ring-1 focus:ring-[#081224] focus:outline-none"
+                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:ring-1 focus:ring-[#000000] focus:outline-none"
                     >
                       {categories.map((c) => (
                         <option key={c.id} value={c.id}>
@@ -284,7 +284,7 @@ export default function ProductsPage() {
                       required
                       value={formData.sellingPrice}
                       onChange={(e) => setFormData({ ...formData, sellingPrice: parseFloat(e.target.value) })}
-                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:ring-1 focus:ring-[#081224] focus:outline-none"
+                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:ring-1 focus:ring-[#000000] focus:outline-none"
                     />
                   </div>
                   <div>
@@ -294,7 +294,7 @@ export default function ProductsPage() {
                       required
                       value={formData.mrp}
                       onChange={(e) => setFormData({ ...formData, mrp: parseFloat(e.target.value) })}
-                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:ring-1 focus:ring-[#081224] focus:outline-none"
+                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:ring-1 focus:ring-[#000000] focus:outline-none"
                     />
                   </div>
                 </div>
@@ -306,7 +306,7 @@ export default function ProductsPage() {
                       type="number"
                       value={formData.taxRate}
                       onChange={(e) => setFormData({ ...formData, taxRate: parseFloat(e.target.value) })}
-                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:ring-1 focus:ring-[#081224] focus:outline-none"
+                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:ring-1 focus:ring-[#000000] focus:outline-none"
                     />
                   </div>
                   <div>
@@ -315,7 +315,7 @@ export default function ProductsPage() {
                       type="number"
                       value={formData.stock}
                       onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) })}
-                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:ring-1 focus:ring-[#081224] focus:outline-none"
+                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:ring-1 focus:ring-[#000000] focus:outline-none"
                     />
                   </div>
                   <div>
@@ -324,7 +324,7 @@ export default function ProductsPage() {
                       type="number"
                       value={formData.minimumStock}
                       onChange={(e) => setFormData({ ...formData, minimumStock: parseInt(e.target.value) })}
-                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:ring-1 focus:ring-[#081224] focus:outline-none"
+                      className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:ring-1 focus:ring-[#000000] focus:outline-none"
                     />
                   </div>
                 </div>

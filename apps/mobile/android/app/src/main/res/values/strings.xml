@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">SalesGrid</string>
-    <string name="title_activity_main">SalesGrid</string>
+    <string name="app_name">Bharath Interior Decor</string>
+    <string name="title_activity_main">Bharath Interior Decor</string>
     <string name="package_name">com.salesgrid.app</string>
     <string name="custom_url_scheme">com.salesgrid.app</string>
     <string name="capacitor_background_geolocation_notification_icon">drawable/ic_stat_salesgrid</string>

@@ -123,7 +123,7 @@ function ReportsContent() {
               onClick={() => setActiveTab(tab.id)}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors whitespace-nowrap ${
                 activeTab === tab.id
-                  ? 'bg-[#081224] text-white border-[#081224]'
+                  ? 'bg-[#000000] text-white border-[#000000]'
                   : 'bg-white text-[#586570] border-[#CBD2D7] hover:bg-[#F3F5F6]'
               }`}
             >
@@ -138,7 +138,7 @@ function ReportsContent() {
             <select
               value={selectedSpId}
               onChange={(e) => setSelectedSpId(e.target.value)}
-              className="px-3 py-1.5 bg-white border border-[#CBD2D7] rounded-lg text-xs font-semibold text-[#0B1320] focus:ring-1 focus:ring-[#081224] focus:outline-none"
+              className="px-3 py-1.5 bg-white border border-[#CBD2D7] rounded-lg text-xs font-semibold text-[#0B1320] focus:ring-1 focus:ring-[#000000] focus:outline-none"
             >
               <option value="">All Sales Representatives</option>
               {salespersons.map((s) => (
@@ -154,14 +154,14 @@ function ReportsContent() {
                 type="date"
                 value={from}
                 onChange={(e) => setFrom(e.target.value)}
-                className="px-2.5 py-1 bg-white border border-[#CBD2D7] rounded-lg text-xs text-[#0B1320] focus:ring-1 focus:ring-[#081224] focus:outline-none"
+                className="px-2.5 py-1 bg-white border border-[#CBD2D7] rounded-lg text-xs text-[#0B1320] focus:ring-1 focus:ring-[#000000] focus:outline-none"
               />
               <span>To:</span>
               <input
                 type="date"
                 value={to}
                 onChange={(e) => setTo(e.target.value)}
-                className="px-2.5 py-1 bg-white border border-[#CBD2D7] rounded-lg text-xs text-[#0B1320] focus:ring-1 focus:ring-[#081224] focus:outline-none"
+                className="px-2.5 py-1 bg-white border border-[#CBD2D7] rounded-lg text-xs text-[#0B1320] focus:ring-1 focus:ring-[#000000] focus:outline-none"
               />
             </div>
           </div>
@@ -169,7 +169,7 @@ function ReportsContent() {
 
         {/* Summary KPI preview if available */}
         {summary.totalSales !== undefined && (
-          <div className="p-4 bg-[#E6F4DD] border border-[#B4E39C] rounded-xl flex items-center justify-between text-xs text-[#2E6819]">
+          <div className="p-4 bg-[#E6F4DD] border border-[#D4AF37] rounded-xl flex items-center justify-between text-xs text-[#2E6819]">
             <div>
               <span className="font-semibold">Total Filtered Sales: </span>
               <span className="text-base font-bold ml-1">₹{summary.totalSales.toLocaleString('en-IN')}</span>

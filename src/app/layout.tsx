@@ -3,16 +3,23 @@ import type { Metadata, Viewport } from 'next';
 import NativeShell from '@/components/native/NativeShell';
 
 export const metadata: Metadata = {
-  title: { default: 'SalesGrid', template: '%s · SalesGrid' },
+  title: { default: 'Bharath Interior Decor', template: '%s · Bharath Interior Decor' },
   description: 'Field sales, GPS tracking, orders and collections — one platform for admins, managers and salespeople.',
-  applicationName: 'SalesGrid',
+  applicationName: 'Bharath Interior Decor',
   manifest: '/manifest.webmanifest',
+  openGraph: {
+    type: 'website',
+    siteName: 'Bharath Interior Decor',
+    title: 'Bharath Interior Decor',
+    description: 'Field sales, GPS tracking, orders and collections.',
+  },
+  appleWebApp: { capable: true, title: 'Bharath Interior Decor', statusBarStyle: 'black-translucent' },
 };
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#081224',
+  themeColor: '#000000',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -8,7 +8,7 @@ export function GET() {
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SalesGrid API Documentation</title>
+  <title>Bharath Interior Decor API Documentation</title>
   <link rel="stylesheet" href="${SWAGGER}/swagger-ui.css">
   <style>body{margin:0;background:#fafafa}.topbar{display:none}</style>
 </head>

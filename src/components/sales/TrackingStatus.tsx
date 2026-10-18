@@ -29,7 +29,7 @@ export default function TrackingStatus({ compact = false }: { compact?: boolean 
     } else if (tracking.status === 'denied' || tracking.permission === 'denied') {
       tone = 'text-[#991B1B]';
       text = native
-        ? 'Location permission is blocked. Allow location for SalesGrid in Android settings, then come back to the app.'
+        ? 'Location permission is blocked. Allow location for Bharath Interior Decor in Android settings, then come back to the app.'
         : 'Location permission is blocked. Allow location for this site in your browser settings, then reload.';
     } else if (native && tracking.status === 'unavailable') {
       tone = 'text-[#991B1B]';
@@ -71,8 +71,8 @@ export default function TrackingStatus({ compact = false }: { compact?: boolean 
       {!compact && (
         <p className="text-[11px] text-[#80909D]">
           {native
-            ? 'Tracking continues in the background while you are on duty. Android may still pause it on phones with aggressive battery saving (exclude SalesGrid from battery optimisation). Any gap appears in your route as a gap — never filled in.'
-            : 'Browsers only provide location while SalesGrid is open. If you switch apps or lock the screen, gaps appear in your route and are shown as gaps — never filled in.'}
+            ? 'Tracking continues in the background while you are on duty. Android may still pause it on phones with aggressive battery saving (exclude Bharath Interior Decor from battery optimisation). Any gap appears in your route as a gap — never filled in.'
+            : 'Browsers only provide location while Bharath Interior Decor is open. If you switch apps or lock the screen, gaps appear in your route and are shown as gaps — never filled in.'}
         </p>
       )}
     </div>

@@ -272,7 +272,7 @@ function OrdersContent() {
                         onClick={() => setSelectedClient(c)}
                         className={`p-4 rounded-xl border text-left cursor-pointer transition-all ${
                           selectedClient?.id === c.id
-                            ? 'border-[#081224] bg-[#F3F5F6] ring-1 ring-[#081224]'
+                            ? 'border-[#000000] bg-[#F3F5F6] ring-1 ring-[#000000]'
                             : 'border-[#CBD2D7] hover:border-[#80909D] bg-white'
                         }`}
                       >
@@ -433,11 +433,11 @@ function OrdersContent() {
                       value={orderNotes}
                       onChange={(e) => setOrderNotes(e.target.value)}
                       placeholder="e.g., Deliver during warehouse loading hours."
-                      className="w-full bg-white border border-[#CBD2D7] rounded-xl p-3 text-xs text-[#0B1320] focus:ring-1 focus:ring-[#081224] focus:outline-none"
+                      className="w-full bg-white border border-[#CBD2D7] rounded-xl p-3 text-xs text-[#0B1320] focus:ring-1 focus:ring-[#000000] focus:outline-none"
                     />
                   </div>
 
-                  <div className="p-4 rounded-xl bg-[#E6F4DD] border border-[#B4E39C] text-xs text-[#2E6819] mb-6">
+                  <div className="p-4 rounded-xl bg-[#E6F4DD] border border-[#D4AF37] text-xs text-[#2E6819] mb-6">
                     Ready to book: <strong>{cartLines.length} product(s)</strong> for <strong>{selectedClient?.name}</strong> totaling <strong>₹{totals.grandTotal.toLocaleString('en-IN')}</strong>.
                   </div>
 
@@ -460,7 +460,7 @@ function OrdersContent() {
               {/* Step 4: Confirmation */}
               {currentStepIndex === 4 && (
                 <div className="text-center py-8">
-                  <div className="w-12 h-12 rounded-full bg-[#E6F4DD] border border-[#B4E39C] text-[#2E6819] flex items-center justify-center mx-auto mb-4">
+                  <div className="w-12 h-12 rounded-full bg-[#E6F4DD] border border-[#D4AF37] text-[#2E6819] flex items-center justify-center mx-auto mb-4">
                     <CheckCircle2 className="w-6 h-6" />
                   </div>
                   <h2 className="text-2xl font-bold text-[#0B1320]">Order Successfully Created!</h2>
@@ -519,7 +519,7 @@ function OrdersContent() {
                     onClick={() => setStatusFilter(st)}
                     className={`px-3.5 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
                       statusFilter === st
-                        ? 'bg-[#081224] text-white border-[#081224]'
+                        ? 'bg-[#000000] text-white border-[#000000]'
                         : 'bg-white text-[#586570] border-[#CBD2D7] hover:bg-[#F3F5F6]'
                     }`}
                   >
@@ -535,7 +535,7 @@ function OrdersContent() {
                   placeholder="Search orders, clients..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-8 pr-4 py-1.5 text-xs bg-white border border-[#CBD2D7] rounded-lg text-[#0B1320] focus:ring-1 focus:ring-[#081224] focus:outline-none w-64"
+                  className="pl-8 pr-4 py-1.5 text-xs bg-white border border-[#CBD2D7] rounded-lg text-[#0B1320] focus:ring-1 focus:ring-[#000000] focus:outline-none w-64"
                 />
               </div>
             </div>
@@ -612,7 +612,7 @@ function OrdersContent() {
 
         {/* Order Details Drawer / Modal */}
         {selectedOrderId && (
-          <div className="fixed inset-0 bg-[#081224]/30 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-[#000000]/30 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
             <div className="bg-white border border-[#CBD2D7] rounded-xl max-w-xl w-full p-6 shadow-xl animate-in fade-in">
               <div className="flex items-center justify-between pb-4 border-b border-[#E2E7EC]">
                 <div>

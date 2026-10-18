@@ -101,7 +101,7 @@ function CollectInner() {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold text-[#0B1320]">Collections</h1>
-        <button onClick={() => setOpen(true)} className="min-h-[40px] px-4 rounded-xl bg-[#081224] text-white text-xs font-bold">
+        <button onClick={() => setOpen(true)} className="min-h-[40px] px-4 rounded-xl bg-[#000000] text-white text-xs font-bold">
           + Collect payment
         </button>
       </div>

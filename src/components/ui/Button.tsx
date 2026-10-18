@@ -25,7 +25,7 @@ export default function Button({
   switch (variant) {
     case 'primary':
       variantClasses =
-        'bg-[#081224] text-white hover:bg-[#111F36] active:bg-[#050C17] border border-[#081224] disabled:bg-[#80909D] disabled:border-[#80909D] shadow-none';
+        'bg-[#000000] text-white hover:bg-[#111F36] active:bg-[#050C17] border border-[#000000] disabled:bg-[#80909D] disabled:border-[#80909D] shadow-none';
       break;
     case 'secondary':
       variantClasses =
@@ -47,7 +47,7 @@ export default function Button({
 
   return (
     <button
-      className={`inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#081224]/20 disabled:cursor-not-allowed select-none ${sizeClasses} ${variantClasses} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#000000]/20 disabled:cursor-not-allowed select-none ${sizeClasses} ${variantClasses} ${className}`}
       disabled={disabled}
       {...props}
     >

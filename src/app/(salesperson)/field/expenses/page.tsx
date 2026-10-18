@@ -147,7 +147,7 @@ export default function FieldExpenses() {
             setFormError(null);
             setDraft(emptyDraft());
           }}
-          className="min-h-[40px] px-4 rounded-xl bg-[#081224] text-white text-xs font-bold"
+          className="min-h-[40px] px-4 rounded-xl bg-[#000000] text-white text-xs font-bold"
         >
           + New claim
         </button>

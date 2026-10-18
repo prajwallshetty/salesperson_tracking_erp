@@ -3,7 +3,7 @@
 import { isNativeApp } from './platform';
 
 /**
- * Shows an Android notification for a SalesGrid event that arrives while the app is in the
+ * Shows an Android notification for a Bharath Interior Decor event that arrives while the app is in the
  * background. The realtime connection stays alive during a shift because the tracking foreground
  * service keeps the app process running; there is no push service (FCM) in this build, so nothing
  * is delivered once Android has stopped the app. In the foreground the in-app toast is used instead.

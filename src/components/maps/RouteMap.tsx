@@ -64,7 +64,7 @@ const DynamicRouteMap = dynamic(
           <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
           <Fit coords={coords} />
           {segments.map((seg, i) =>
-            seg.length > 1 ? <Polyline key={i} positions={seg.map((p) => [p.latitude, p.longitude] as [number, number])} pathOptions={{ color: '#081224', weight: 4, opacity: 0.75 }} /> : null
+            seg.length > 1 ? <Polyline key={i} positions={seg.map((p) => [p.latitude, p.longitude] as [number, number])} pathOptions={{ color: '#000000', weight: 4, opacity: 0.75 }} /> : null
           )}
           {start && (
             <Marker position={[start.latitude, start.longitude]} icon={startIcon}>

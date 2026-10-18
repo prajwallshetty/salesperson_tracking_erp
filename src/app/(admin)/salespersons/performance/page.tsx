@@ -64,7 +64,7 @@ function PerformanceContent() {
             <select
               value={selectedSpId}
               onChange={(e) => setSelectedSpId(e.target.value)}
-              className="px-3 py-1.5 bg-white border border-[#CBD2D7] rounded-lg text-xs font-semibold text-[#0B1320] focus:ring-1 focus:ring-[#081224] focus:outline-none"
+              className="px-3 py-1.5 bg-white border border-[#CBD2D7] rounded-lg text-xs font-semibold text-[#0B1320] focus:ring-1 focus:ring-[#000000] focus:outline-none"
             >
               {salespersons.map((s) => (
                 <option key={s.id} value={s.id}>
@@ -86,7 +86,7 @@ function PerformanceContent() {
                 onClick={() => setRange(t.id)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
                   range === t.id
-                    ? 'bg-[#081224] text-white border-[#081224]'
+                    ? 'bg-[#000000] text-white border-[#000000]'
                     : 'bg-white text-[#586570] border-[#CBD2D7] hover:bg-[#F3F5F6]'
                 }`}
               >

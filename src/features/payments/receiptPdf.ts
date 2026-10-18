@@ -1,4 +1,5 @@
 import PDFDocument from 'pdfkit';
+import path from 'node:path';
 
 export interface PaymentReceiptData {
   receiptNumber: string;
@@ -26,9 +27,16 @@ export function renderPaymentReceiptPdf(data: PaymentReceiptData): Promise<Buffe
   doc.on('error', reject);
 
   // Header banner
-  doc.rect(0, 0, doc.page.width, 70).fill('#0f766e');
-  doc.fontSize(18).fillColor('#ffffff').text('SALESGRID — PAYMENT RECEIPT', 40, 25, { align: 'left' });
-  doc.fontSize(10).fillColor('#ccfbf1').text('Official Electronic Collection Voucher', 40, 48);
+  doc.rect(0, 0, doc.page.width, 70).fill('#000000');
+  let textX = 40;
+  try {
+    doc.image(path.join(process.cwd(), 'public', 'brand', 'logo-512.png'), 40, 8, { width: 54, height: 54 });
+    textX = 106;
+  } catch {
+    // Logo file unavailable: the receipt is still issued, with the name only.
+  }
+  doc.fontSize(16).fillColor('#ffffff').text('BHARATH INTERIOR DECOR', textX, 22, { align: 'left' });
+  doc.fontSize(10).fillColor('#D4AF37').text('Payment Receipt — Official Electronic Collection Voucher', textX, 44);
 
   doc.moveDown(3);
 
@@ -85,7 +93,7 @@ export function renderPaymentReceiptPdf(data: PaymentReceiptData): Promise<Buffe
 
   // Security Notice
   doc.fontSize(8).fillColor('#94a3b8').text(
-    'This is a computer-generated voucher issued by SalesGrid. Subject to account clearance.',
+    'This is a computer-generated voucher issued by Bharath Interior Decor. Subject to account clearance.',
     40,
     doc.page.height - 45,
     { align: 'center', width: doc.page.width - 80 }

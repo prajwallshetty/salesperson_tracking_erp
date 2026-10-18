@@ -24,7 +24,7 @@ import { SOCKET_EVENTS } from '@/lib/domain/constants';
 import { computeLiveState, type LiveState } from '@/features/tracking/liveState';
 
 const STATE_STYLE: Record<LiveState, { dot: string; text: string; bg: string; border: string }> = {
-  live: { dot: 'bg-[#2E6819]', text: 'text-[#2E6819]', bg: 'bg-[#E6F4DD]', border: 'border-[#B4E39C]' },
+  live: { dot: 'bg-[#2E6819]', text: 'text-[#2E6819]', bg: 'bg-[#E6F4DD]', border: 'border-[#D4AF37]' },
   stale: { dot: 'bg-[#B45309]', text: 'text-[#92400E]', bg: 'bg-[#FEF3C7]', border: 'border-[#FDE68A]' },
   unavailable: { dot: 'bg-[#80909D]', text: 'text-[#586570]', bg: 'bg-[#F3F5F6]', border: 'border-[#CBD2D7]' },
   permission_denied: { dot: 'bg-[#991B1B]', text: 'text-[#991B1B]', bg: 'bg-[#FDF2F2]', border: 'border-[#F8C4C4]' },
@@ -181,7 +181,7 @@ export default function LiveTrackingPage() {
           <div className="p-4 border-b border-[#CBD2D7] bg-[#F3F5F6]/60">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-bold text-[#0B1320]">Salesperson Feed</h3>
-              <span className="text-xs font-semibold text-[#2E6819] bg-[#E6F4DD] border border-[#B4E39C] px-2 py-0.5 rounded-full">
+              <span className="text-xs font-semibold text-[#2E6819] bg-[#E6F4DD] border border-[#D4AF37] px-2 py-0.5 rounded-full">
                 {liveStatuses.filter((s) => s.dutyStatus === 'ON_DUTY').length} On Duty
               </span>
             </div>
@@ -193,7 +193,7 @@ export default function LiveTrackingPage() {
                   onClick={() => setFilterDuty(mode)}
                   className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
                     filterDuty === mode
-                      ? 'bg-[#081224] text-white border-[#081224]'
+                      ? 'bg-[#000000] text-white border-[#000000]'
                       : 'bg-white text-[#586570] border-[#CBD2D7] hover:bg-[#F3F5F6]'
                   }`}
                 >
@@ -212,7 +212,7 @@ export default function LiveTrackingPage() {
               filteredStatuses.map((sp) => (
                 <div
                   key={sp.id}
-                  className="p-3.5 rounded-xl border border-[#CBD2D7] bg-[#F3F5F6] hover:bg-white hover:border-[#081224] transition-all space-y-2.5"
+                  className="p-3.5 rounded-xl border border-[#CBD2D7] bg-[#F3F5F6] hover:bg-white hover:border-[#000000] transition-all space-y-2.5"
                 >
                   <div className="flex items-start justify-between">
                     <div>
@@ -250,7 +250,7 @@ export default function LiveTrackingPage() {
                       )}
                       {sp.speed !== null && (
                         <span className="flex items-center gap-1 font-mono">
-                          <Zap className="w-3 h-3 text-[#081224]" />
+                          <Zap className="w-3 h-3 text-[#000000]" />
                           {sp.speed} km/h
                         </span>
                       )}

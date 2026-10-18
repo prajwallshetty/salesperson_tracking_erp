@@ -182,7 +182,7 @@ export default function Header({ title, onMenu }: { title: string; onMenu: () =>
         <div
           title={`Realtime connection: ${connectionStatus}`}
           className={`hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${
-            isConnected ? 'bg-[#E6F4DD] text-[#2E6819] border-[#B4E39C]' : connectionStatus === 'connecting' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-rose-50 text-rose-700 border-rose-200'
+            isConnected ? 'bg-[#E6F4DD] text-[#2E6819] border-[#D4AF37]' : connectionStatus === 'connecting' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-rose-50 text-rose-700 border-rose-200'
           }`}
         >
           <Radio className="w-3 h-3" />
@@ -205,7 +205,7 @@ export default function Header({ title, onMenu }: { title: string; onMenu: () =>
           >
             <Bell className="w-4 h-4" />
             {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 w-4 h-4 bg-[#081224] text-white text-[10px] font-bold rounded-full flex items-center justify-center">{unreadCount > 9 ? '9+' : unreadCount}</span>
+              <span className="absolute top-1 right-1 w-4 h-4 bg-[#000000] text-white text-[10px] font-bold rounded-full flex items-center justify-center">{unreadCount > 9 ? '9+' : unreadCount}</span>
             )}
           </button>
           {open && (

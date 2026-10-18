@@ -52,7 +52,7 @@ export function PrimaryButton({ children, loading, className = '', ...rest }: Re
     <button
       {...rest}
       disabled={rest.disabled || loading}
-      className={`w-full min-h-[44px] inline-flex items-center justify-center gap-2 px-4 rounded-xl bg-[#081224] text-white text-sm font-semibold hover:bg-[#111F36] disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+      className={`w-full min-h-[44px] inline-flex items-center justify-center gap-2 px-4 rounded-xl bg-[#000000] text-white text-sm font-semibold hover:bg-[#111F36] disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
     >
       {loading && <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" aria-hidden="true" />}
       {children}
@@ -82,7 +82,7 @@ export function Field({ label, htmlFor, hint, children }: { label: string; htmlF
 }
 
 export const inputClass =
-  'w-full min-h-[44px] px-3 py-2 text-base bg-white border border-[#CBD2D7] rounded-xl text-[#0B1320] placeholder:text-[#8C9BA5] focus:outline-none focus:ring-2 focus:ring-[#081224]/20 focus:border-[#081224]';
+  'w-full min-h-[44px] px-3 py-2 text-base bg-white border border-[#CBD2D7] rounded-xl text-[#0B1320] placeholder:text-[#8C9BA5] focus:outline-none focus:ring-2 focus:ring-[#000000]/20 focus:border-[#000000]';
 
 export function Chip({ active, children, ...rest }: React.ButtonHTMLAttributes<HTMLButtonElement> & { active?: boolean }) {
   return (
@@ -90,7 +90,7 @@ export function Chip({ active, children, ...rest }: React.ButtonHTMLAttributes<H
       type="button"
       aria-pressed={active}
       {...rest}
-      className={`shrink-0 min-h-[36px] px-3 rounded-full text-xs font-semibold border ${active ? 'bg-[#081224] text-white border-[#081224]' : 'bg-white text-[#586570] border-[#CBD2D7]'}`}
+      className={`shrink-0 min-h-[36px] px-3 rounded-full text-xs font-semibold border ${active ? 'bg-[#000000] text-white border-[#000000]' : 'bg-white text-[#586570] border-[#CBD2D7]'}`}
     >
       {children}
     </button>
@@ -124,7 +124,7 @@ export function Notice({ tone = 'info', children }: { tone?: 'info' | 'error' | 
   const cls = {
     info: 'bg-[#EFF6FF] border-[#BFDBFE] text-[#1E3A8A]',
     error: 'bg-[#FDF2F2] border-[#F8C4C4] text-[#991B1B]',
-    success: 'bg-[#E6F4DD] border-[#B4E39C] text-[#2E6819]',
+    success: 'bg-[#E6F4DD] border-[#D4AF37] text-[#2E6819]',
     warning: 'bg-[#FEF3C7] border-[#FDE68A] text-[#92400E]',
   }[tone];
   return (
@@ -136,17 +136,17 @@ export function Notice({ tone = 'info', children }: { tone?: 'info' | 'error' | 
 
 export function StatusPill({ status }: { status: string }) {
   const map: Record<string, string> = {
-    CONFIRMED: 'bg-[#E6F4DD] text-[#2E6819] border-[#B4E39C]',
-    DELIVERED: 'bg-[#E6F4DD] text-[#2E6819] border-[#B4E39C]',
-    VERIFIED: 'bg-[#E6F4DD] text-[#2E6819] border-[#B4E39C]',
-    REIMBURSED: 'bg-[#E6F4DD] text-[#2E6819] border-[#B4E39C]',
-    COMPLETED: 'bg-[#E6F4DD] text-[#2E6819] border-[#B4E39C]',
+    CONFIRMED: 'bg-[#E6F4DD] text-[#2E6819] border-[#D4AF37]',
+    DELIVERED: 'bg-[#E6F4DD] text-[#2E6819] border-[#D4AF37]',
+    VERIFIED: 'bg-[#E6F4DD] text-[#2E6819] border-[#D4AF37]',
+    REIMBURSED: 'bg-[#E6F4DD] text-[#2E6819] border-[#D4AF37]',
+    COMPLETED: 'bg-[#E6F4DD] text-[#2E6819] border-[#D4AF37]',
     APPROVED: 'bg-[#EFF6FF] text-[#1E40AF] border-[#BFDBFE]',
     PROCESSING: 'bg-[#EFF6FF] text-[#1E40AF] border-[#BFDBFE]',
     DISPATCHED: 'bg-[#EFF6FF] text-[#1E40AF] border-[#BFDBFE]',
     SUBMITTED: 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]',
     PENDING: 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]',
-    ON_DUTY: 'bg-[#E6F4DD] text-[#2E6819] border-[#B4E39C]',
+    ON_DUTY: 'bg-[#E6F4DD] text-[#2E6819] border-[#D4AF37]',
     REJECTED: 'bg-[#FEE2E2] text-[#991B1B] border-[#FECACA]',
     CANCELLED: 'bg-[#FEE2E2] text-[#991B1B] border-[#FECACA]',
     FAILED: 'bg-[#FEE2E2] text-[#991B1B] border-[#FECACA]',

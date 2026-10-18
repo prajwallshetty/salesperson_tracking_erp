@@ -5,7 +5,7 @@ import type { PermissionState } from '@capacitor/core';
 /**
  * Android background tracking (Capacitor): a foreground service with a persistent notification keeps
  * location updates coming while the app is in the background or the screen is off. Used only inside
- * the SalesGrid Android app and only while a salesperson is on duty (the tracker starts/stops it).
+ * the Bharath Interior Decor Android app and only while a salesperson is on duty (the tracker starts/stops it).
  * Fixes still go through the same buffer, filters and authenticated upload as in the browser.
  */
 
@@ -64,7 +64,7 @@ export async function startNativeTracking(onFix: (fix: NativeFix) => void, onErr
   try {
     await bg.start(
       {
-        backgroundTitle: 'SalesGrid is recording your route',
+        backgroundTitle: 'Bharath Interior Decor is recording your route',
         backgroundMessage: 'Your location is recorded while you are on duty. End your day to stop.',
         requestPermissions: true,
         stale: false,
@@ -78,7 +78,7 @@ export async function startNativeTracking(onFix: (fix: NativeFix) => void, onErr
           latitude: loc.latitude,
           longitude: loc.longitude,
           accuracy: Number.isFinite(loc.accuracy) ? loc.accuracy : null,
-          // Android reports metres per second; SalesGrid stores km/h.
+          // Android reports metres per second; Bharath Interior Decor stores km/h.
           speedKmh: loc.speed != null && loc.speed >= 0 ? Math.round(loc.speed * 3.6 * 10) / 10 : null,
           heading: loc.bearing != null && !Number.isNaN(loc.bearing) ? loc.bearing : null,
           timestamp: new Date(loc.time ?? Date.now()).toISOString(),

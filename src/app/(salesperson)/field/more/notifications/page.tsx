@@ -45,8 +45,8 @@ export default function Notifications() {
           {data.data.map((n) => (
             <li key={n.id}>
               <button className="w-full text-left" onClick={() => !n.read && markOne(n.id)}>
-                <Card className={`p-3 ${n.read ? '' : 'border-[#081224]'}`}>
-                  <p className="text-sm font-semibold">{!n.read && <span className="inline-block w-2 h-2 rounded-full bg-[#081224] mr-1.5" aria-label="Unread" />}{n.title}</p>
+                <Card className={`p-3 ${n.read ? '' : 'border-[#000000]'}`}>
+                  <p className="text-sm font-semibold">{!n.read && <span className="inline-block w-2 h-2 rounded-full bg-[#000000] mr-1.5" aria-label="Unread" />}{n.title}</p>
                   <p className="text-xs text-[#586570] mt-0.5">{n.message}</p>
                   <p className="text-[10px] text-[#80909D] mt-1">{formatDateTime(n.createdAt)}</p>
                 </Card>

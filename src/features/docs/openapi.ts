@@ -1,13 +1,13 @@
-/** OpenAPI description of the SalesGrid REST API (contract preserved from the legacy Express API). */
+/** OpenAPI description of the Bharath Interior Decor REST API (contract preserved from the legacy Express API). */
 const op = (summary: string, extra: Record<string, unknown> = {}) => ({ summary, ...extra });
 
 export const openApiSpec = {
   openapi: '3.0.0',
   info: {
-    title: 'SalesGrid API',
+    title: 'Bharath Interior Decor API',
     version: '2.0.0',
     description:
-      'REST API of the unified SalesGrid Next.js application. Authenticate with `Authorization: Bearer <token>` (from /api/auth/login) or the httpOnly `sg_session` cookie set by the same endpoint.',
+      'REST API of the unified Bharath Interior Decor Next.js application. Authenticate with `Authorization: Bearer <token>` (from /api/auth/login) or the httpOnly `sg_session` cookie set by the same endpoint.',
   },
   components: { securitySchemes: { bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' } } },
   security: [{ bearerAuth: [] }],

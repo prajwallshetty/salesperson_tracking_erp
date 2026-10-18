@@ -22,7 +22,7 @@ export default function ActionTile({
       onClick={onClick}
       className={`border rounded-xl p-5 text-left transition-all cursor-pointer flex items-start gap-4 ${
         selected
-          ? 'bg-white border-[#081224] ring-1 ring-[#081224]'
+          ? 'bg-white border-[#000000] ring-1 ring-[#000000]'
           : 'bg-white border-[#CBD2D7] hover:border-[#80909D]'
       } ${className}`}
     >

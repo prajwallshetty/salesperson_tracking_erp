@@ -185,8 +185,8 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
       >
         <div className="h-[64px] lg:h-[72px] flex items-center px-5 gap-3 border-b border-[#D8DFE4]/80">
           <BrandMark />
-          <div className="leading-tight flex-1">
-            <p className="font-semibold text-[#0B1320] text-[14px] tracking-tight">SalesGrid</p>
+          <div className="leading-tight flex-1 min-w-0">
+            <p className="font-semibold text-[#0B1320] text-[13px] tracking-tight">Bharath Interior Decor</p>
             <p className="text-[11px] text-[#586570]">{isAdmin ? 'Admin Console' : 'Manager Console'}</p>
           </div>
           <button className="lg:hidden p-1.5 rounded-md hover:bg-[#DFE5E8]" onClick={onClose} aria-label="Close navigation">
@@ -283,7 +283,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
         <div className="p-3 border-t border-[#D8DFE4]">
           {confirmAll && (
             <div role="dialog" aria-label="Sign out of all devices" className="mb-2 p-3 rounded-xl bg-white border border-[#D8DFE4] text-[12px] text-[#0B1320] space-y-2">
-              <p>Sign out of SalesGrid on every browser and device, including this one?</p>
+              <p>Sign out of Bharath Interior Decor on every browser and device, including this one?</p>
               {allError && <p className="text-[#991B1B]">{allError}</p>}
               <div className="flex gap-2 justify-end">
                 <button onClick={() => setConfirmAll(false)} className="px-2.5 py-1 rounded-md border border-[#D8DFE4]">Cancel</button>
@@ -295,7 +295,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
           )}
           <div className="flex items-center justify-between px-2 py-1.5 rounded-xl">
             <div className="flex items-center gap-2.5 overflow-hidden">
-              <div className="w-8 h-8 rounded-full bg-[#081224] text-[#B4E39C] flex items-center justify-center font-semibold text-[11px] shrink-0">
+              <div className="w-8 h-8 rounded-full bg-[#000000] text-[#D4AF37] flex items-center justify-center font-semibold text-[11px] shrink-0">
                 {user?.name?.slice(0, 2).toUpperCase()}
               </div>
               <div className="truncate">

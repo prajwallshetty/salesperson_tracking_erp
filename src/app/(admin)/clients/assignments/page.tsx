@@ -165,7 +165,7 @@ export default function ClientAssignmentsPage() {
 
         {/* Modal */}
         {selectedClient && (
-          <div className="fixed inset-0 bg-[#081224]/30 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-[#000000]/30 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
             <div className="bg-white border border-[#CBD2D7] rounded-xl max-w-md w-full p-6 shadow-xl animate-in fade-in">
               <div className="flex items-center justify-between pb-3 border-b border-[#E2E7EC]">
                 <h3 className="text-base font-bold text-[#0B1320]">
@@ -183,7 +183,7 @@ export default function ClientAssignmentsPage() {
                     required
                     value={primarySpId}
                     onChange={(e) => setPrimarySpId(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg text-xs font-medium text-[#0B1320] focus:ring-1 focus:ring-[#081224] focus:outline-none"
+                    className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg text-xs font-medium text-[#0B1320] focus:ring-1 focus:ring-[#000000] focus:outline-none"
                   >
                     <option value="">Select Primary Salesperson</option>
                     {salespersons.map((s) => (
@@ -199,7 +199,7 @@ export default function ClientAssignmentsPage() {
                   <select
                     value={backupSpId}
                     onChange={(e) => setBackupSpId(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg text-xs font-medium text-[#0B1320] focus:ring-1 focus:ring-[#081224] focus:outline-none"
+                    className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg text-xs font-medium text-[#0B1320] focus:ring-1 focus:ring-[#000000] focus:outline-none"
                   >
                     <option value="">None / Optional</option>
                     {salespersons.map((s) => (
@@ -217,7 +217,7 @@ export default function ClientAssignmentsPage() {
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="e.g. Territory boundary restructuring."
-                    className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:ring-1 focus:ring-[#081224] focus:outline-none"
+                    className="w-full px-3 py-2 bg-white border border-[#CBD2D7] rounded-lg focus:ring-1 focus:ring-[#000000] focus:outline-none"
                   />
                 </div>
 

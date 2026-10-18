@@ -227,7 +227,7 @@ function PaymentsContent() {
                         onClick={() => setSelectedClient(c)}
                         className={`p-4 rounded-xl border text-left cursor-pointer transition-all ${
                           selectedClient?.id === c.id
-                            ? 'border-[#081224] bg-[#F3F5F6] ring-1 ring-[#081224]'
+                            ? 'border-[#000000] bg-[#F3F5F6] ring-1 ring-[#000000]'
                             : 'border-[#CBD2D7] hover:border-[#80909D] bg-white'
                         }`}
                       >
@@ -275,7 +275,7 @@ function PaymentsContent() {
                         placeholder="e.g., 25000"
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
-                        className="w-full bg-white border border-[#CBD2D7] rounded-xl p-3 text-sm text-[#0B1320] font-semibold focus:ring-1 focus:ring-[#081224] focus:outline-none"
+                        className="w-full bg-white border border-[#CBD2D7] rounded-xl p-3 text-sm text-[#0B1320] font-semibold focus:ring-1 focus:ring-[#000000] focus:outline-none"
                       />
                     </div>
 
@@ -289,7 +289,7 @@ function PaymentsContent() {
                             onClick={() => setPaymentMethod(m)}
                             className={`p-3 rounded-lg border text-xs font-semibold text-center transition-colors ${
                               paymentMethod === m
-                                ? 'bg-[#081224] text-white border-[#081224]'
+                                ? 'bg-[#000000] text-white border-[#000000]'
                                 : 'bg-white text-[#586570] border-[#CBD2D7] hover:bg-[#F3F5F6]'
                             }`}
                           >
@@ -332,7 +332,7 @@ function PaymentsContent() {
                         placeholder="e.g., UPI/2026/987123"
                         value={transactionRef}
                         onChange={(e) => setTransactionRef(e.target.value)}
-                        className="w-full bg-white border border-[#CBD2D7] rounded-xl p-3 text-xs text-[#0B1320] focus:ring-1 focus:ring-[#081224] focus:outline-none"
+                        className="w-full bg-white border border-[#CBD2D7] rounded-xl p-3 text-xs text-[#0B1320] focus:ring-1 focus:ring-[#000000] focus:outline-none"
                       />
                     </div>
 
@@ -343,7 +343,7 @@ function PaymentsContent() {
                         placeholder="e.g., Cheque handed over during store visit."
                         value={paymentNotes}
                         onChange={(e) => setPaymentNotes(e.target.value)}
-                        className="w-full bg-white border border-[#CBD2D7] rounded-xl p-3 text-xs text-[#0B1320] focus:ring-1 focus:ring-[#081224] focus:outline-none"
+                        className="w-full bg-white border border-[#CBD2D7] rounded-xl p-3 text-xs text-[#0B1320] focus:ring-1 focus:ring-[#000000] focus:outline-none"
                       />
                     </div>
                   </div>
@@ -387,7 +387,7 @@ function PaymentsContent() {
                     </div>
                   </div>
 
-                  <div className="p-4 rounded-xl bg-[#E6F4DD] border border-[#B4E39C] text-xs text-[#2E6819] mb-6 max-w-lg">
+                  <div className="p-4 rounded-xl bg-[#E6F4DD] border border-[#D4AF37] text-xs text-[#2E6819] mb-6 max-w-lg">
                     Note: Payment will enter <strong>PENDING</strong> status. It will not reduce verified ledger debt until verified.
                   </div>
 
@@ -410,7 +410,7 @@ function PaymentsContent() {
               {/* Step 4: Receipt */}
               {currentStepIndex === 4 && (
                 <div className="text-center py-8">
-                  <div className="w-12 h-12 rounded-full bg-[#E6F4DD] border border-[#B4E39C] text-[#2E6819] flex items-center justify-center mx-auto mb-4">
+                  <div className="w-12 h-12 rounded-full bg-[#E6F4DD] border border-[#D4AF37] text-[#2E6819] flex items-center justify-center mx-auto mb-4">
                     <CheckCircle2 className="w-6 h-6" />
                   </div>
                   <h2 className="text-2xl font-bold text-[#0B1320]">Receipt Voucher Created!</h2>
@@ -483,7 +483,7 @@ function PaymentsContent() {
                     onClick={() => setStatusFilter(tab.id)}
                     className={`px-3.5 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
                       statusFilter === tab.id
-                        ? 'bg-[#081224] text-white border-[#081224]'
+                        ? 'bg-[#000000] text-white border-[#000000]'
                         : 'bg-white text-[#586570] border-[#CBD2D7] hover:bg-[#F3F5F6]'
                     }`}
                   >
@@ -499,7 +499,7 @@ function PaymentsContent() {
                   placeholder="Search receipt #, ref, client..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-8 pr-4 py-1.5 text-xs bg-white border border-[#CBD2D7] rounded-lg text-[#0B1320] focus:ring-1 focus:ring-[#081224] focus:outline-none w-64"
+                  className="pl-8 pr-4 py-1.5 text-xs bg-white border border-[#CBD2D7] rounded-lg text-[#0B1320] focus:ring-1 focus:ring-[#000000] focus:outline-none w-64"
                 />
               </div>
             </div>
@@ -570,7 +570,7 @@ function PaymentsContent() {
                                   <button
                                     aria-label={`Verify ${p.receiptNumber}`}
                                     onClick={() => handleVerify(p.id, 'VERIFIED')}
-                                    className="p-1 rounded bg-[#E6F4DD] text-[#2E6819] border border-[#B4E39C] hover:bg-[#D4EFC3]"
+                                    className="p-1 rounded bg-[#E6F4DD] text-[#2E6819] border border-[#D4AF37] hover:bg-[#D4EFC3]"
                                     title="Verify & Post Credit"
                                   >
                                     <CheckCircle2 className="w-3.5 h-3.5" />

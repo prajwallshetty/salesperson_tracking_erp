@@ -69,7 +69,7 @@ export default function FieldShell({ children }: { children: React.ReactNode }) 
         <div className="flex items-center gap-2.5 min-w-0">
           <BrandMark />
           <div className="min-w-0">
-            <p className="text-[15px] font-bold text-[#0B1320] leading-tight">SalesGrid</p>
+            <p className="text-[15px] font-bold text-[#0B1320] leading-tight">Bharath Interior Decor</p>
             <p className="text-[11px] text-[#586570] truncate">
               {user?.name} · {user?.employeeCode}
             </p>
@@ -125,7 +125,7 @@ export default function FieldShell({ children }: { children: React.ReactNode }) 
             </Link>
           )}
           <span
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-bold ${onDuty ? 'bg-[#E6F4DD] border-[#B4E39C] text-[#2E6819]' : 'bg-[#F3F5F6] border-[#CBD2D7] text-[#586570]'}`}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-bold ${onDuty ? 'bg-[#E6F4DD] border-[#D4AF37] text-[#2E6819]' : 'bg-[#F3F5F6] border-[#CBD2D7] text-[#586570]'}`}
             title={dutyPendingSync ? 'Duty change waiting to sync' : undefined}
           >
             <span className={`w-1.5 h-1.5 rounded-full ${onDuty ? 'bg-[#2E6819]' : 'bg-[#80909D]'}`} />

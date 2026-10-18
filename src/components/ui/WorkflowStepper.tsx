@@ -57,9 +57,9 @@ export default function WorkflowStepper({
               <div
                 className={`w-6 h-6 rounded-full flex items-center justify-center transition-all bg-white ${
                   isCurrent
-                    ? 'border-2 border-[#B4E39C] ring-4 ring-[#E6F4DD]'
+                    ? 'border-2 border-[#D4AF37] ring-4 ring-[#E6F4DD]'
                     : isCompleted
-                    ? 'border-2 border-[#B4E39C] bg-[#E6F4DD]'
+                    ? 'border-2 border-[#D4AF37] bg-[#E6F4DD]'
                     : 'border-2 border-[#CFD6DC]'
                 }`}
               >

@@ -105,7 +105,7 @@ export function RealtimeProvider({ children, toasts = true }: { children: React.
     on(SOCKET_EVENTS.TEAM_CHANGED);
     // Permissions are enforced by the server on every request; this only refreshes what the UI shows.
     on(SOCKET_EVENTS.PERMISSIONS_CHANGED, () => void refreshUserRef.current());
-    on(SOCKET_EVENTS.NOTIFICATION_NEW, (n) => void showBackgroundNotification(n?.title || 'SalesGrid', n?.message || ''));
+    on(SOCKET_EVENTS.NOTIFICATION_NEW, (n) => void showBackgroundNotification(n?.title || 'Bharath Interior Decor', n?.message || ''));
 
     setSocket(s);
     return () => {
@@ -121,7 +121,7 @@ export function RealtimeProvider({ children, toasts = true }: { children: React.
       {children}
       {toast && (
         <div role="status" aria-live="polite" className="fixed bottom-4 right-4 left-4 sm:left-auto z-[60] sm:max-w-sm bg-white border border-[#CBD2D7] rounded-xl p-4 shadow-lg flex items-start gap-3">
-          <span className={`w-2.5 h-2.5 rounded-full mt-1.5 shrink-0 ${toast.tone === 'success' ? 'bg-[#2E6819]' : 'bg-[#081224]'}`} />
+          <span className={`w-2.5 h-2.5 rounded-full mt-1.5 shrink-0 ${toast.tone === 'success' ? 'bg-[#2E6819]' : 'bg-[#000000]'}`} />
           <div className="flex-1 min-w-0">
             <p className="text-xs font-bold text-[#0B1320]">{toast.title}</p>
             <p className="text-xs text-[#586570] mt-0.5 break-words">{toast.message}</p>

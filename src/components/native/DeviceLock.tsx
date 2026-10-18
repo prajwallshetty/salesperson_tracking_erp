@@ -73,12 +73,12 @@ export default function DeviceLock({ userId, onSignOut }: { userId: string; onSi
 
   if (!locked) return null;
   return (
-    <div role="alertdialog" aria-label="SalesGrid is locked" className="fixed inset-0 z-[95] bg-[#081224] text-white flex flex-col items-center justify-center p-6 text-center">
-      <Fingerprint className="w-12 h-12 text-[#B4E39C]" aria-hidden="true" />
-      <p className="text-lg font-bold mt-3">SalesGrid is locked</p>
+    <div role="alertdialog" aria-label="Bharath Interior Decor is locked" className="fixed inset-0 z-[95] bg-[#000000] text-white flex flex-col items-center justify-center p-6 text-center">
+      <Fingerprint className="w-12 h-12 text-[#D4AF37]" aria-hidden="true" />
+      <p className="text-lg font-bold mt-3">Bharath Interior Decor is locked</p>
       <p className="text-sm text-white/75 mt-1">Use your fingerprint, face or device PIN to continue.</p>
       {error && <p className="text-xs text-[#FCA5A5] mt-3 max-w-xs">{error}</p>}
-      <button onClick={unlock} className="mt-6 px-5 py-2.5 rounded-xl bg-[#B4E39C] text-[#081224] font-semibold min-h-[44px]">Unlock</button>
+      <button onClick={unlock} className="mt-6 px-5 py-2.5 rounded-xl bg-[#D4AF37] text-[#000000] font-semibold min-h-[44px]">Unlock</button>
       <button onClick={onSignOut} className="mt-3 px-5 py-2.5 rounded-xl border border-white/30 text-sm min-h-[44px]">Sign out</button>
     </div>
   );

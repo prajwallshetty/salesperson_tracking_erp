@@ -238,7 +238,7 @@ function ExpensesContent() {
         );
       case 'REIMBURSED':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#E6F4DD] text-[#2E6819] border border-[#B4E39C]">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#E6F4DD] text-[#2E6819] border border-[#D4AF37]">
             <CheckCircle2 className="w-3 h-3 text-[#2E6819]" />
             Reimbursed
           </span>
@@ -301,7 +301,7 @@ function ExpensesContent() {
           <div className="bg-white rounded-xl border border-[#CBD2D7] p-5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-[#586570] uppercase tracking-wider">Disbursed Reimbursements</span>
-              <div className="w-8 h-8 rounded-lg bg-[#E6F4DD] flex items-center justify-center text-[#2E6819] border border-[#B4E39C]">
+              <div className="w-8 h-8 rounded-lg bg-[#E6F4DD] flex items-center justify-center text-[#2E6819] border border-[#D4AF37]">
                 <Banknote className="w-4 h-4" />
               </div>
             </div>
@@ -338,7 +338,7 @@ function ExpensesContent() {
                   onClick={() => setSelectedStatus(st)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
                     selectedStatus === st
-                      ? 'bg-[#081224] text-white shadow-sm'
+                      ? 'bg-[#000000] text-white shadow-sm'
                       : 'bg-[#F5F7F8] text-[#586570] hover:text-[#0B1320] hover:bg-[#EAEFF2]'
                   }`}
                 >
@@ -357,7 +357,7 @@ function ExpensesContent() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && fetchExpenses()}
-                  className="pl-9 pr-3 py-1.5 text-xs bg-[#F5F7F8] border border-[#CBD2D7] rounded-lg text-[#0B1320] focus:outline-none focus:border-[#081224] w-full sm:w-48 lg:w-64"
+                  className="pl-9 pr-3 py-1.5 text-xs bg-[#F5F7F8] border border-[#CBD2D7] rounded-lg text-[#0B1320] focus:outline-none focus:border-[#000000] w-full sm:w-48 lg:w-64"
                 />
               </div>
 
@@ -365,7 +365,7 @@ function ExpensesContent() {
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
                 aria-label="Filter by expense category"
-                className="px-3 py-1.5 text-xs bg-[#F5F7F8] border border-[#CBD2D7] rounded-lg text-[#0B1320] focus:outline-none focus:border-[#081224]"
+                className="px-3 py-1.5 text-xs bg-[#F5F7F8] border border-[#CBD2D7] rounded-lg text-[#0B1320] focus:outline-none focus:border-[#000000]"
               >
                 <option value="ALL">All Categories</option>
                 {Object.values(EXPENSE_CATEGORIES).map((c) => (
@@ -460,7 +460,7 @@ function ExpensesContent() {
                           {expense.receiptUrl ? (
                             <button
                               onClick={() => setInspectExpense(expense)}
-                              className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#081224] bg-white border border-[#CBD2D7] px-2 py-1 rounded hover:bg-[#F5F7F8] transition-colors"
+                              className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#000000] bg-white border border-[#CBD2D7] px-2 py-1 rounded hover:bg-[#F5F7F8] transition-colors"
                               title="Inspect Receipt"
                             >
                               <Eye className="w-3 h-3 text-[#2E6819]" />
@@ -496,7 +496,7 @@ function ExpensesContent() {
                                   className={`px-2.5 py-1 rounded text-xs font-semibold transition-colors ${
                                     isSelfClaim
                                       ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                      : 'bg-[#081224] text-white hover:bg-black'
+                                      : 'bg-[#000000] text-white hover:bg-black'
                                   }`}
                                   title={isSelfClaim ? 'Self-approval is prohibited' : 'Approve claim'}
                                 >
@@ -527,7 +527,7 @@ function ExpensesContent() {
                                   setReimburseModal(expense);
                                   setActionError(null);
                                 }}
-                                className="px-2.5 py-1 rounded text-xs font-semibold bg-[#E6F4DD] text-[#2E6819] border border-[#B4E39C] hover:bg-[#d6edc9] transition-colors"
+                                className="px-2.5 py-1 rounded text-xs font-semibold bg-[#E6F4DD] text-[#2E6819] border border-[#D4AF37] hover:bg-[#d6edc9] transition-colors"
                                 title="Record bank disbursement"
                               >
                                 Reimburse
@@ -575,7 +575,7 @@ function ExpensesContent() {
                       (e.target as HTMLElement).style.display = 'none';
                     }}
                   />
-                  <DocLink href={inspectExpense.receiptUrl} className="inline-block mt-2 text-xs font-semibold text-[#081224] underline">
+                  <DocLink href={inspectExpense.receiptUrl} className="inline-block mt-2 text-xs font-semibold text-[#000000] underline">
                     Open Full Receipt File
                   </DocLink>
                 </div>
@@ -632,7 +632,7 @@ function ExpensesContent() {
 
               {/* Reimbursement Details if any */}
               {inspectExpense.reimbursementRef && (
-                <div className="bg-[#E6F4DD] p-3 rounded-lg border border-[#B4E39C] text-xs text-[#2E6819]">
+                <div className="bg-[#E6F4DD] p-3 rounded-lg border border-[#D4AF37] text-xs text-[#2E6819]">
                   <span className="font-bold block flex items-center gap-1.5">
                     <CheckCircle2 className="w-3.5 h-3.5 text-[#2E6819]" />
                     Reimbursement Settlement Record
@@ -702,7 +702,7 @@ function ExpensesContent() {
                   value={approveComment}
                   onChange={(e) => setApproveComment(e.target.value)}
                   placeholder="e.g. Verified client visit transport receipts."
-                  className="w-full text-xs p-3 bg-[#F5F7F8] border border-[#CBD2D7] rounded-lg focus:outline-none focus:border-[#081224] h-24"
+                  className="w-full text-xs p-3 bg-[#F5F7F8] border border-[#CBD2D7] rounded-lg focus:outline-none focus:border-[#000000] h-24"
                 />
               </div>
 
@@ -721,7 +721,7 @@ function ExpensesContent() {
               <button
                 onClick={handleApprove}
                 disabled={actionLoading}
-                className="px-4 py-2 text-xs font-semibold bg-[#081224] text-white rounded-lg hover:bg-black disabled:opacity-50"
+                className="px-4 py-2 text-xs font-semibold bg-[#000000] text-white rounded-lg hover:bg-black disabled:opacity-50"
               >
                 {actionLoading ? 'Approving...' : 'Confirm Approval'}
               </button>
@@ -808,7 +808,7 @@ function ExpensesContent() {
                   value={reimbursementRef}
                   onChange={(e) => setReimbursementRef(e.target.value)}
                   placeholder="e.g. UTR-98234871239 or CHQ-0021"
-                  className="w-full text-xs p-2.5 bg-[#F5F7F8] border border-[#CBD2D7] rounded-lg focus:outline-none focus:border-[#081224]"
+                  className="w-full text-xs p-2.5 bg-[#F5F7F8] border border-[#CBD2D7] rounded-lg focus:outline-none focus:border-[#000000]"
                 />
               </div>
 
@@ -819,7 +819,7 @@ function ExpensesContent() {
                 <select
                   value={reimbursementMethod}
                   onChange={(e) => setReimbursementMethod(e.target.value)}
-                  className="w-full text-xs p-2.5 bg-[#F5F7F8] border border-[#CBD2D7] rounded-lg focus:outline-none focus:border-[#081224]"
+                  className="w-full text-xs p-2.5 bg-[#F5F7F8] border border-[#CBD2D7] rounded-lg focus:outline-none focus:border-[#000000]"
                 >
                   <option value="BANK_TRANSFER">NEFT / RTGS Bank Transfer</option>
                   <option value="UPI">Corporate UPI</option>
@@ -838,7 +838,7 @@ function ExpensesContent() {
                   value={reimburseComment}
                   onChange={(e) => setReimburseComment(e.target.value)}
                   placeholder="e.g. Cleared via payroll batch 09/2026."
-                  className="w-full text-xs p-2.5 bg-[#F5F7F8] border border-[#CBD2D7] rounded-lg focus:outline-none focus:border-[#081224]"
+                  className="w-full text-xs p-2.5 bg-[#F5F7F8] border border-[#CBD2D7] rounded-lg focus:outline-none focus:border-[#000000]"
                 />
               </div>
 

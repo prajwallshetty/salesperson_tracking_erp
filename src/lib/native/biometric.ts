@@ -24,7 +24,7 @@ export interface BiometricStatus {
 }
 
 export async function biometricStatus(): Promise<BiometricStatus> {
-  if (!isNativeApp()) return { available: false, reason: 'Only available in the SalesGrid Android app.' };
+  if (!isNativeApp()) return { available: false, reason: 'Only available in the Bharath Interior Decor Android app.' };
   try {
     const { BiometricAuth } = await plugins();
     const r = await BiometricAuth.checkBiometry();
@@ -41,11 +41,11 @@ export async function isBiometricLockEnabled(userId: string): Promise<boolean> {
 }
 
 /** Shows the system prompt (fingerprint/face, or the device PIN as fallback). Throws on cancel/failure. */
-export async function authenticateBiometric(reason = 'Unlock SalesGrid'): Promise<void> {
+export async function authenticateBiometric(reason = 'Unlock Bharath Interior Decor'): Promise<void> {
   const { BiometricAuth } = await plugins();
   await BiometricAuth.authenticate({
     reason,
-    androidTitle: 'Unlock SalesGrid',
+    androidTitle: 'Unlock Bharath Interior Decor',
     androidSubtitle: reason,
     allowDeviceCredential: true,
     cancelTitle: 'Cancel',

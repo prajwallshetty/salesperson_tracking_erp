@@ -186,7 +186,7 @@ export default function FieldClients() {
       <h1 className="text-lg font-bold text-[#0B1320]">My clients</h1>
 
       {active && (
-        <Card className="border-[#081224]">
+        <Card className="border-[#000000]">
           <p className="text-[11px] font-bold tracking-wider text-[#80909D] uppercase">Visit in progress</p>
           <p className="text-sm font-bold text-[#0B1320] mt-0.5">{active.clientName}</p>
           <p className="text-xs text-[#586570]">
@@ -255,7 +255,7 @@ export default function FieldClients() {
                     onClick={() => openStartVisit(c)}
                     disabled={Boolean(active)}
                     title={active ? 'Complete the current visit first' : undefined}
-                    className="min-h-[44px] rounded-xl bg-[#081224] text-white text-[11px] font-semibold disabled:opacity-40"
+                    className="min-h-[44px] rounded-xl bg-[#000000] text-white text-[11px] font-semibold disabled:opacity-40"
                   >
                     Visit
                   </button>

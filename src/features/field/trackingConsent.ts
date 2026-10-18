@@ -11,7 +11,7 @@ import { isNativeApp } from '@/lib/native/platform';
 const key = (userId: string) => `salesgrid.trackingConsent.v1.${userId}`;
 
 export const TRACKING_DISCLOSURE = [
-  'SalesGrid records your phone’s location while you are on duty — including when the app is in the background or the screen is off.',
+  'Bharath Interior Decor records your phone’s location while you are on duty — including when the app is in the background or the screen is off.',
   'A notification stays visible while this is happening. Tracking stops when you end your day.',
   'The location trail is used for your route and distance, to verify client visits, and so your manager can see where the team is during working hours.',
   'Nothing is recorded while you are off duty.',

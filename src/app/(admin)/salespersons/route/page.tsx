@@ -24,7 +24,7 @@ import { useRealtimeRefresh, useSocket } from '@/components/shared/RealtimeProvi
 import { SOCKET_EVENTS } from '@/lib/domain/constants';
 
 const QUALITY: Record<string, { label: string; cls: string; hint: string }> = {
-  complete: { label: 'Complete', cls: 'bg-[#E6F4DD] text-[#2E6819] border-[#B4E39C]', hint: 'Shift ended with a usable GPS record.' },
+  complete: { label: 'Complete', cls: 'bg-[#E6F4DD] text-[#2E6819] border-[#D4AF37]', hint: 'Shift ended with a usable GPS record.' },
   in_progress: { label: 'In progress', cls: 'bg-[#E0F2FE] text-[#075985] border-[#BAE6FD]', hint: 'Shift is still open; the route grows as fixes arrive.' },
   incomplete: { label: 'Incomplete', cls: 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]', hint: 'The shift was never ended, or fewer than two usable GPS fixes were recorded. Only what the phone reported is drawn.' },
 };
@@ -114,7 +114,7 @@ function RouteHistoryContent() {
               <select
                 value={selectedSpId}
                 onChange={(e) => setSelectedSpId(e.target.value)}
-                className="px-3 py-1.5 bg-white border border-[#CBD2D7] rounded-lg text-xs font-semibold text-[#0B1320] focus:ring-1 focus:ring-[#081224] focus:outline-none"
+                className="px-3 py-1.5 bg-white border border-[#CBD2D7] rounded-lg text-xs font-semibold text-[#0B1320] focus:ring-1 focus:ring-[#000000] focus:outline-none"
               >
                 {salespersons.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -130,7 +130,7 @@ function RouteHistoryContent() {
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="px-3 py-1.5 bg-white border border-[#CBD2D7] rounded-lg text-xs font-semibold text-[#0B1320] focus:ring-1 focus:ring-[#081224] focus:outline-none"
+                className="px-3 py-1.5 bg-white border border-[#CBD2D7] rounded-lg text-xs font-semibold text-[#0B1320] focus:ring-1 focus:ring-[#000000] focus:outline-none"
               />
             </div>
           </div>
@@ -139,7 +139,7 @@ function RouteHistoryContent() {
             <span className="text-xs font-semibold text-[#0B1320] bg-[#F3F5F6] border border-[#CBD2D7] px-3 py-1.5 rounded-lg">
               Est. distance: {Number(routeData?.estimatedDistanceKm || 0).toFixed(1)} km
             </span>
-            <span className="text-xs font-semibold text-[#2E6819] bg-[#E6F4DD] border border-[#B4E39C] px-3 py-1.5 rounded-lg">
+            <span className="text-xs font-semibold text-[#2E6819] bg-[#E6F4DD] border border-[#D4AF37] px-3 py-1.5 rounded-lg">
               {points.length} GPS points{routeData?.rejectedPointsCount ? ` · ${routeData.rejectedPointsCount} rejected` : ''}
             </span>
             {segments.length > 1 && (
@@ -267,7 +267,7 @@ function RouteHistoryContent() {
                     <div key={o.id} className="p-3 rounded-xl border border-[#CBD2D7] bg-white space-y-1.5 text-xs">
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-[#0B1320] flex items-center gap-1.5">
-                          <ShoppingCart className="w-3.5 h-3.5 text-[#081224]" />
+                          <ShoppingCart className="w-3.5 h-3.5 text-[#000000]" />
                           {o.orderNumber}
                         </span>
                         <span className="font-bold text-[#0B1320]">₹{Number(o.grandTotal).toLocaleString('en-IN')}</span>
@@ -278,7 +278,7 @@ function RouteHistoryContent() {
 
                   {/* Collections */}
                   {events.payments.map((p: any) => (
-                    <div key={p.id} className="p-3 rounded-xl border border-[#B4E39C] bg-[#E6F4DD]/40 space-y-1.5 text-xs">
+                    <div key={p.id} className="p-3 rounded-xl border border-[#D4AF37] bg-[#E6F4DD]/40 space-y-1.5 text-xs">
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-[#2E6819] flex items-center gap-1.5">
                           <CreditCard className="w-3.5 h-3.5 text-[#2E6819]" />

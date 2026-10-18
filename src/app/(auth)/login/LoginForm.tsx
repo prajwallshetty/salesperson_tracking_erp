@@ -28,7 +28,7 @@ interface DevAccount {
 const ROLE_LABEL: Record<Role, string> = { SUPER_ADMIN: 'Super admin', MANAGER: 'Manager', SALESPERSON: 'Salesperson' };
 
 const inputCls =
-  'w-full pl-9 pr-3 py-2.5 text-base sm:text-sm bg-white border border-[#CBD2D7] rounded-lg text-[#0B1320] placeholder:text-[#8C9BA5] focus:ring-2 focus:ring-[#081224]/20 focus:border-[#081224] focus:outline-none';
+  'w-full pl-9 pr-3 py-2.5 text-base sm:text-sm bg-white border border-[#CBD2D7] rounded-lg text-[#0B1320] placeholder:text-[#8C9BA5] focus:ring-2 focus:ring-[#000000]/20 focus:border-[#000000] focus:outline-none';
 
 export default function LoginForm({ devQuickLogin }: { devQuickLogin: boolean }) {
   const params = useSearchParams();
@@ -147,8 +147,8 @@ export default function LoginForm({ devQuickLogin }: { devQuickLogin: boolean })
   return (
     <div className="w-full max-w-md bg-white border border-[#CBD2D7] rounded-2xl p-6 sm:p-8">
       <div className="flex flex-col items-center text-center mb-6">
-        <BrandMark size={44} />
-        <h1 className="text-xl font-bold text-[#0B1320] tracking-tight mt-3">SalesGrid</h1>
+        <BrandMark size={96} />
+        <h1 className="text-xl font-bold text-[#0B1320] tracking-tight mt-3">Bharath Interior Decor</h1>
         <p className="text-xs text-[#586570] mt-1">Field sales, tracking & collections</p>
       </div>
 
@@ -295,7 +295,7 @@ export default function LoginForm({ devQuickLogin }: { devQuickLogin: boolean })
         </div>
         <div className="flex items-center justify-between gap-3">
           <label className="inline-flex items-center gap-2 text-xs text-[#0B1320]">
-            <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="w-4 h-4 accent-[#081224]" />
+            <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="w-4 h-4 accent-[#000000]" />
             Remember me
           </label>
           {rememberedName && (
@@ -320,7 +320,7 @@ export default function LoginForm({ devQuickLogin }: { devQuickLogin: boolean })
         <button
           type="submit"
           disabled={loading || !identifier.trim() || !secret || (companyRequired && !company.trim())}
-          className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#081224] text-white text-sm font-semibold hover:bg-[#111F36] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#000000] text-white text-sm font-semibold hover:bg-[#111F36] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? 'Signing in…' : 'Sign in'}
           {!loading && <ArrowRight className="w-4 h-4" />}
@@ -349,7 +349,7 @@ export default function LoginForm({ devQuickLogin }: { devQuickLogin: boolean })
                     type="button"
                     disabled={loading}
                     onClick={() => devSignIn(d)}
-                    className="p-2.5 rounded-lg bg-[#F8FAFC] border border-[#CBD2D7] hover:border-[#081224] hover:bg-white hover:shadow-xs transition-all text-left disabled:opacity-50 group cursor-pointer"
+                    className="p-2.5 rounded-lg bg-[#F8FAFC] border border-[#CBD2D7] hover:border-[#000000] hover:bg-white hover:shadow-xs transition-all text-left disabled:opacity-50 group cursor-pointer"
                   >
                     <div className="flex items-center justify-between gap-1 mb-1">
                       <p className="text-[11px] font-bold text-[#0B1320] truncate group-hover:text-indigo-600 transition-colors">{d.name}</p>

@@ -31,14 +31,14 @@ module.exports = {
           muted: '#80909D',
         },
         primary: {
-          DEFAULT: '#081224',
-          hover: '#111F36',
+          DEFAULT: '#000000',
+          hover: '#1A1A1A',
           foreground: '#FFFFFF',
         },
         lime: {
-          accent: '#B4E39C',
-          soft: '#E6F4DD',
-          dark: '#2E6819',
+          accent: '#D4AF37',
+          soft: '#F6EBC8',
+          dark: '#8A6D1A',
         },
         badge: {
           muted: '#CFDDE5',

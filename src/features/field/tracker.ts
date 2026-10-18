@@ -11,7 +11,7 @@ import { NativeLocationError, startNativeTracking, stopNativeTracking, nativePer
  *
  *  - Android app: a native foreground service (persistent notification) keeps fixes coming while the
  *    app is in the background or the screen is off.
- *  - Browser: tracking runs while the SalesGrid tab is open (browsers do not allow background
+ *  - Browser: tracking runs while the Bharath Interior Decor tab is open (browsers do not allow background
  *    geolocation); the optional Screen Wake Lock keeps the device awake during field work.
  *
  * Both go through the same sampling, buffer and authenticated batch upload. Only fixes reported by
@@ -224,7 +224,7 @@ export class FieldTracker {
         background: true,
         notificationsBlocked: blocked,
         permission: 'granted',
-        lastError: blocked ? 'Notifications are blocked: Android may stop background tracking. Allow notifications for SalesGrid in Android settings.' : this.state.lastError,
+        lastError: blocked ? 'Notifications are blocked: Android may stop background tracking. Allow notifications for Bharath Interior Decor in Android settings.' : this.state.lastError,
       });
       if (blocked) this.report('BACKGROUND_DENIED', 'Notifications blocked: Android may stop background tracking');
     } catch (err) {
@@ -234,7 +234,7 @@ export class FieldTracker {
 
   private onNativeFailure(err: NativeLocationError) {
     if (err.kind === 'permission_denied') {
-      this.set({ status: 'denied', permission: 'denied', background: false, lastError: 'Location permission is blocked. Allow location for SalesGrid in Android settings.' });
+      this.set({ status: 'denied', permission: 'denied', background: false, lastError: 'Location permission is blocked. Allow location for Bharath Interior Decor in Android settings.' });
       this.report('PERMISSION_DENIED', 'Location permission refused on the phone');
     } else if (err.kind === 'location_disabled') {
       this.set({ status: 'unavailable', background: false, lastError: 'Location services are switched off. Turn on Location in Android quick settings.' });
