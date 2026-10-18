@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { AlertCircle, ArrowRight, Building2, KeyRound, Lock, User } from 'lucide-react';
+import { AlertCircle, ArrowRight, Building2, KeyRound, Lock, User, ShieldCheck, Briefcase, Smartphone, Zap } from 'lucide-react';
 import { BrandMark } from '@/components/shared/Brand';
 import { homePathForRole, type Role } from '@/lib/permissions';
 import { apiJson, errorMessage, ApiError } from '@/lib/client/apiFetch';
@@ -118,6 +118,64 @@ export default function LoginForm({ devQuickLogin }: { devQuickLogin: boolean })
         <h1 className="text-xl font-bold text-[#0B1320] tracking-tight mt-3">SalesGrid</h1>
         <p className="text-xs text-[#586570] mt-1">Field sales, tracking & collections</p>
       </div>
+
+      {devQuickLogin && devAccounts.length > 0 && (
+        <div className="mb-5 p-3.5 rounded-xl bg-gradient-to-br from-indigo-50/80 via-white to-sky-50/80 border border-indigo-100/80 shadow-xs">
+          <div className="flex items-center justify-between mb-2.5">
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0B1320]">
+              <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+              1-Click Demo Access
+            </span>
+            <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200/60">
+              Instant Login
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {devAccounts.find((a) => a.role === 'SUPER_ADMIN') && (
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => devSignIn(devAccounts.find((a) => a.role === 'SUPER_ADMIN')!)}
+                className="flex flex-col items-center justify-center p-2 rounded-lg bg-white border border-indigo-200/70 hover:border-indigo-500 hover:shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 group"
+              >
+                <div className="w-7 h-7 rounded-full bg-indigo-100/70 flex items-center justify-center mb-1 group-hover:bg-indigo-600 group-hover:text-white text-indigo-600 transition-colors">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <span className="text-xs font-bold text-[#0B1320]">Admin</span>
+                <span className="text-[10px] text-[#586570]">Full ERP</span>
+              </button>
+            )}
+            {devAccounts.find((a) => a.role === 'MANAGER') && (
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => devSignIn(devAccounts.find((a) => a.role === 'MANAGER')!)}
+                className="flex flex-col items-center justify-center p-2 rounded-lg bg-white border border-sky-200/70 hover:border-sky-500 hover:shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 group"
+              >
+                <div className="w-7 h-7 rounded-full bg-sky-100/70 flex items-center justify-center mb-1 group-hover:bg-sky-600 group-hover:text-white text-sky-600 transition-colors">
+                  <Briefcase className="w-4 h-4" />
+                </div>
+                <span className="text-xs font-bold text-[#0B1320]">Manager</span>
+                <span className="text-[10px] text-[#586570]">Approvals</span>
+              </button>
+            )}
+            {devAccounts.find((a) => a.role === 'SALESPERSON') && (
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => devSignIn(devAccounts.find((a) => a.role === 'SALESPERSON')!)}
+                className="flex flex-col items-center justify-center p-2 rounded-lg bg-white border border-emerald-200/70 hover:border-emerald-500 hover:shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 group"
+              >
+                <div className="w-7 h-7 rounded-full bg-emerald-100/70 flex items-center justify-center mb-1 group-hover:bg-emerald-600 group-hover:text-white text-emerald-600 transition-colors">
+                  <Smartphone className="w-4 h-4" />
+                </div>
+                <span className="text-xs font-bold text-[#0B1320]">Field Sales</span>
+                <span className="text-[10px] text-[#586570]">Mobile App</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       <div role="tablist" aria-label="Sign-in method" className="grid grid-cols-2 gap-1 p-1 bg-[#F3F5F6] rounded-lg mb-5">
         {(['PASSWORD', 'ACCESS_CODE'] as Mode[]).map((m) => (
@@ -248,28 +306,41 @@ export default function LoginForm({ devQuickLogin }: { devQuickLogin: boolean })
 
       {devQuickLogin && (
         <div className="mt-6 pt-5 border-t border-[#E2E7EC]">
-          <p className="text-[11px] font-semibold text-[#586570] uppercase tracking-wider mb-2 text-center">Development quick login</p>
+          <p className="text-[11px] font-semibold text-[#586570] uppercase tracking-wider mb-2.5 text-center">Development quick login</p>
           {devAccounts.length === 0 ? (
             <p className="text-[11px] text-[#80909D] text-center">No active accounts in this database.</p>
           ) : (
             <div className="grid grid-cols-2 gap-2">
-              {devAccounts.map((d) => (
-                <button
-                  key={d.id}
-                  type="button"
-                  disabled={loading}
-                  onClick={() => devSignIn(d)}
-                  className="p-2 rounded-lg bg-[#F3F5F6] border border-[#CBD2D7] hover:border-[#081224] text-left disabled:opacity-50"
-                >
-                  <p className="text-[11px] font-bold text-[#0B1320] truncate">{d.name}</p>
-                  <p className="text-[10px] text-[#586570] truncate">
-                    {ROLE_LABEL[d.role]} · {d.label}
-                  </p>
-                </button>
-              ))}
+              {devAccounts.map((d) => {
+                const badgeStyle =
+                  d.role === 'SUPER_ADMIN'
+                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                    : d.role === 'MANAGER'
+                    ? 'bg-sky-50 text-sky-700 border-sky-200'
+                    : 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                return (
+                  <button
+                    key={d.id}
+                    type="button"
+                    disabled={loading}
+                    onClick={() => devSignIn(d)}
+                    className="p-2.5 rounded-lg bg-[#F8FAFC] border border-[#CBD2D7] hover:border-[#081224] hover:bg-white hover:shadow-xs transition-all text-left disabled:opacity-50 group cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between gap-1 mb-1">
+                      <p className="text-[11px] font-bold text-[#0B1320] truncate group-hover:text-indigo-600 transition-colors">{d.name}</p>
+                      <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded border ${badgeStyle} shrink-0`}>
+                        {ROLE_LABEL[d.role]}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-[#586570] truncate">
+                      {d.label}
+                    </p>
+                  </button>
+                );
+              })}
             </div>
           )}
-          <p className="text-[10px] text-[#80909D] text-center mt-2">Shown because DEV_QUICK_LOGIN=true. Never available in production.</p>
+          <p className="text-[10px] text-[#80909D] text-center mt-2.5">Shown because DEV_QUICK_LOGIN=true. Never available in production.</p>
         </div>
       )}
     </div>
