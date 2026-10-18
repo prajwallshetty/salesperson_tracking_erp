@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Bell, Menu, Radio } from 'lucide-react';
+import { Bell, Menu, Radio, Zap, ShieldCheck, Briefcase, Smartphone, ChevronDown, Check } from 'lucide-react';
 import { useSession } from '@/components/shared/SessionProvider';
 import { useSocket } from '@/components/shared/RealtimeProvider';
 import { apiFetch } from '@/lib/client/apiFetch';
@@ -10,12 +10,15 @@ import { apiFetch } from '@/lib/client/apiFetch';
 const TZ = process.env.NEXT_PUBLIC_DEFAULT_TIMEZONE || 'Asia/Kolkata';
 
 export default function Header({ title, onMenu }: { title: string; onMenu: () => void }) {
-  const { hasPermission } = useSession();
+  const { user, hasPermission } = useSession();
   const { isConnected, connectionStatus, lastEvent } = useSocket();
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  const [switchOpen, setSwitchOpen] = useState(false);
+  const [switching, setSwitching] = useState(false);
+  const switchRef = useRef<HTMLDivElement>(null);
 
   const load = async () => {
     try {
@@ -50,6 +53,42 @@ export default function Header({ title, onMenu }: { title: string; onMenu: () =>
     };
   }, [open]);
 
+  useEffect(() => {
+    if (!switchOpen) return;
+    const onDown = (e: MouseEvent) => switchRef.current && !switchRef.current.contains(e.target as Node) && setSwitchOpen(false);
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setSwitchOpen(false);
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [switchOpen]);
+
+  const switchRole = async (targetRole: 'SUPER_ADMIN' | 'MANAGER' | 'SALESPERSON') => {
+    setSwitching(true);
+    const credentials = {
+      SUPER_ADMIN: { identifier: 'admin@erp.com', password: 'Password123!' },
+      MANAGER: { identifier: 'manager@erp.com', password: 'Password123!' },
+      SALESPERSON: { identifier: 'rahul@erp.com', password: 'Password123!' },
+    };
+    const cred = credentials[targetRole];
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier: cred.identifier, password: cred.password, remember: true }),
+      });
+      if (res.ok) {
+        window.location.assign(targetRole === 'SALESPERSON' ? '/field' : '/dashboard');
+      } else {
+        setSwitching(false);
+      }
+    } catch {
+      setSwitching(false);
+    }
+  };
+
   const markAllRead = async () => {
     const res = await apiFetch('/api/notifications/read-all', { method: 'PUT' });
     if (res.ok) {
@@ -67,7 +106,79 @@ export default function Header({ title, onMenu }: { title: string; onMenu: () =>
         <h1 className="text-base md:text-xl font-semibold text-[#0B1320] tracking-tight truncate">{title}</h1>
       </div>
 
-      <div className="flex items-center gap-2 md:gap-4 shrink-0">
+      <div className="flex items-center gap-2 md:gap-3 shrink-0">
+        {/* Quick Demo Role Switcher */}
+        <div className="relative" ref={switchRef}>
+          <button
+            onClick={() => setSwitchOpen(!switchOpen)}
+            disabled={switching}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-indigo-50/90 to-sky-50/90 border border-indigo-200/90 text-indigo-950 hover:border-indigo-400 hover:shadow-xs transition-all cursor-pointer disabled:opacity-50"
+            title="Quick switch demo role"
+          >
+            <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />
+            <span className="hidden sm:inline text-[#586570]">Demo:</span>
+            <span className="font-bold text-indigo-700">
+              {user?.role === 'SUPER_ADMIN' ? 'Admin' : user?.role === 'MANAGER' ? 'Manager' : 'Salesperson'}
+            </span>
+            <ChevronDown className="w-3 h-3 text-indigo-500 shrink-0" />
+          </button>
+          {switchOpen && (
+            <div className="absolute right-0 mt-2 w-60 bg-white border border-[#CBD2D7] rounded-xl shadow-lg py-1.5 z-50">
+              <div className="px-3 py-1.5 border-b border-[#E2E7EC] flex items-center justify-between">
+                <span className="text-[10px] font-bold text-[#586570] uppercase tracking-wider">Quick Role Switch</span>
+                <span className="text-[9px] text-amber-600 font-semibold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">1-Tap</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => switchRole('SUPER_ADMIN')}
+                className={`w-full flex items-center justify-between px-3 py-2 text-left hover:bg-indigo-50/70 transition-colors ${user?.role === 'SUPER_ADMIN' ? 'bg-indigo-50/40' : ''}`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-6 h-6 rounded-md bg-indigo-100 flex items-center justify-center text-indigo-700 shrink-0">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-[#0B1320]">Admin</p>
+                    <p className="text-[10px] text-[#586570]">Full ERP console</p>
+                  </div>
+                </div>
+                {user?.role === 'SUPER_ADMIN' && <Check className="w-4 h-4 text-indigo-600 shrink-0" />}
+              </button>
+              <button
+                type="button"
+                onClick={() => switchRole('MANAGER')}
+                className={`w-full flex items-center justify-between px-3 py-2 text-left hover:bg-sky-50/70 transition-colors ${user?.role === 'MANAGER' ? 'bg-sky-50/40' : ''}`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-6 h-6 rounded-md bg-sky-100 flex items-center justify-center text-sky-700 shrink-0">
+                    <Briefcase className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-[#0B1320]">Manager</p>
+                    <p className="text-[10px] text-[#586570]">Team & approvals</p>
+                  </div>
+                </div>
+                {user?.role === 'MANAGER' && <Check className="w-4 h-4 text-sky-600 shrink-0" />}
+              </button>
+              <button
+                type="button"
+                onClick={() => switchRole('SALESPERSON')}
+                className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-emerald-50/70 transition-colors"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-6 h-6 rounded-md bg-emerald-100 flex items-center justify-center text-emerald-700 shrink-0">
+                    <Smartphone className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-[#0B1320]">Field Sales</p>
+                    <p className="text-[10px] text-[#586570]">Mobile field app</p>
+                  </div>
+                </div>
+              </button>
+            </div>
+          )}
+        </div>
+
         <div
           title={`Realtime connection: ${connectionStatus}`}
           className={`hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${

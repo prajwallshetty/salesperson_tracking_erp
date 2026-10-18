@@ -111,6 +111,39 @@ export default function LoginForm({ devQuickLogin }: { devQuickLogin: boolean })
     }
   };
 
+  const quickDemoSignIn = async (role: Role) => {
+    setError('');
+    setLoading(true);
+
+    const account = devAccounts.find((a) => a.role === role);
+    if (devQuickLogin && account) {
+      return devSignIn(account);
+    }
+
+    const credentials: Record<Role, { identifier: string; secret: string }> = {
+      SUPER_ADMIN: { identifier: 'admin@erp.com', secret: 'Password123!' },
+      MANAGER: { identifier: 'manager@erp.com', secret: 'Password123!' },
+      SALESPERSON: { identifier: 'rahul@erp.com', secret: 'Password123!' },
+    };
+    const cred = credentials[role];
+    setMode('PASSWORD');
+    setIdentifier(cred.identifier);
+    setSecret(cred.secret);
+
+    try {
+      const res = await apiJson<{ user: { role: Role } }>('/api/auth/login', {
+        method: 'POST',
+        json: { company: company.trim() || undefined, identifier: cred.identifier, password: cred.secret, remember: true },
+      });
+      saveQuickAccess({ company: company.trim().toLowerCase(), identifier: cred.identifier, mode: 'PASSWORD', remember: true });
+      finish(res.user.role);
+    } catch (err) {
+      if (err instanceof ApiError && err.code === 'COMPANY_REQUIRED') setCompanyRequired(true);
+      setError(errorMessage(err, 'Demo sign-in failed'));
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="w-full max-w-md bg-white border border-[#CBD2D7] rounded-2xl p-6 sm:p-8">
       <div className="flex flex-col items-center text-center mb-6">
@@ -119,63 +152,55 @@ export default function LoginForm({ devQuickLogin }: { devQuickLogin: boolean })
         <p className="text-xs text-[#586570] mt-1">Field sales, tracking & collections</p>
       </div>
 
-      {devQuickLogin && devAccounts.length > 0 && (
-        <div className="mb-5 p-3.5 rounded-xl bg-gradient-to-br from-indigo-50/80 via-white to-sky-50/80 border border-indigo-100/80 shadow-xs">
-          <div className="flex items-center justify-between mb-2.5">
-            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0B1320]">
-              <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-              1-Click Demo Access
-            </span>
-            <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200/60">
-              Instant Login
-            </span>
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            {devAccounts.find((a) => a.role === 'SUPER_ADMIN') && (
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => devSignIn(devAccounts.find((a) => a.role === 'SUPER_ADMIN')!)}
-                className="flex flex-col items-center justify-center p-2 rounded-lg bg-white border border-indigo-200/70 hover:border-indigo-500 hover:shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 group"
-              >
-                <div className="w-7 h-7 rounded-full bg-indigo-100/70 flex items-center justify-center mb-1 group-hover:bg-indigo-600 group-hover:text-white text-indigo-600 transition-colors">
-                  <ShieldCheck className="w-4 h-4" />
-                </div>
-                <span className="text-xs font-bold text-[#0B1320]">Admin</span>
-                <span className="text-[10px] text-[#586570]">Full ERP</span>
-              </button>
-            )}
-            {devAccounts.find((a) => a.role === 'MANAGER') && (
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => devSignIn(devAccounts.find((a) => a.role === 'MANAGER')!)}
-                className="flex flex-col items-center justify-center p-2 rounded-lg bg-white border border-sky-200/70 hover:border-sky-500 hover:shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 group"
-              >
-                <div className="w-7 h-7 rounded-full bg-sky-100/70 flex items-center justify-center mb-1 group-hover:bg-sky-600 group-hover:text-white text-sky-600 transition-colors">
-                  <Briefcase className="w-4 h-4" />
-                </div>
-                <span className="text-xs font-bold text-[#0B1320]">Manager</span>
-                <span className="text-[10px] text-[#586570]">Approvals</span>
-              </button>
-            )}
-            {devAccounts.find((a) => a.role === 'SALESPERSON') && (
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => devSignIn(devAccounts.find((a) => a.role === 'SALESPERSON')!)}
-                className="flex flex-col items-center justify-center p-2 rounded-lg bg-white border border-emerald-200/70 hover:border-emerald-500 hover:shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 group"
-              >
-                <div className="w-7 h-7 rounded-full bg-emerald-100/70 flex items-center justify-center mb-1 group-hover:bg-emerald-600 group-hover:text-white text-emerald-600 transition-colors">
-                  <Smartphone className="w-4 h-4" />
-                </div>
-                <span className="text-xs font-bold text-[#0B1320]">Field Sales</span>
-                <span className="text-[10px] text-[#586570]">Mobile App</span>
-              </button>
-            )}
-          </div>
+      <div className="mb-5 p-3.5 rounded-xl bg-gradient-to-br from-indigo-50/80 via-white to-sky-50/80 border border-indigo-100/80 shadow-xs">
+        <div className="flex items-center justify-between mb-2.5">
+          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0B1320]">
+            <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+            1-Click Demo Login
+          </span>
+          <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200/60">
+            Instant Access
+          </span>
         </div>
-      )}
+        <div className="grid grid-cols-3 gap-2">
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => quickDemoSignIn('SUPER_ADMIN')}
+            className="flex flex-col items-center justify-center p-2 rounded-lg bg-white border border-indigo-200/70 hover:border-indigo-500 hover:shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 group"
+          >
+            <div className="w-7 h-7 rounded-full bg-indigo-100/70 flex items-center justify-center mb-1 group-hover:bg-indigo-600 group-hover:text-white text-indigo-600 transition-colors">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
+            <span className="text-xs font-bold text-[#0B1320]">Admin</span>
+            <span className="text-[10px] text-[#586570]">Full ERP</span>
+          </button>
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => quickDemoSignIn('MANAGER')}
+            className="flex flex-col items-center justify-center p-2 rounded-lg bg-white border border-sky-200/70 hover:border-sky-500 hover:shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 group"
+          >
+            <div className="w-7 h-7 rounded-full bg-sky-100/70 flex items-center justify-center mb-1 group-hover:bg-sky-600 group-hover:text-white text-sky-600 transition-colors">
+              <Briefcase className="w-4 h-4" />
+            </div>
+            <span className="text-xs font-bold text-[#0B1320]">Manager</span>
+            <span className="text-[10px] text-[#586570]">Approvals</span>
+          </button>
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => quickDemoSignIn('SALESPERSON')}
+            className="flex flex-col items-center justify-center p-2 rounded-lg bg-white border border-emerald-200/70 hover:border-emerald-500 hover:shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 group"
+          >
+            <div className="w-7 h-7 rounded-full bg-emerald-100/70 flex items-center justify-center mb-1 group-hover:bg-emerald-600 group-hover:text-white text-emerald-600 transition-colors">
+              <Smartphone className="w-4 h-4" />
+            </div>
+            <span className="text-xs font-bold text-[#0B1320]">Field Sales</span>
+            <span className="text-[10px] text-[#586570]">Mobile App</span>
+          </button>
+        </div>
+      </div>
 
       <div role="tablist" aria-label="Sign-in method" className="grid grid-cols-2 gap-1 p-1 bg-[#F3F5F6] rounded-lg mb-5">
         {(['PASSWORD', 'ACCESS_CODE'] as Mode[]).map((m) => (
