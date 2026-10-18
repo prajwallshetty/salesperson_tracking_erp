@@ -10,7 +10,7 @@ const DEV_FALLBACK_SECRET = 'salesgrid-dev-only-secret-do-not-use-in-production'
 const parseList = (raw?: string): string[] =>
   (raw || '')
     .split(',')
-    .map((o) => o.trim())
+    .map((o) => o.trim().replace(/\/+$/, ''))
     .filter(Boolean);
 
 export const config = {

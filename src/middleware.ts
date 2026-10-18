@@ -43,6 +43,19 @@ async function readRole(req: NextRequest): Promise<Role | null> {
 const matches = (path: string, prefixes: string[]) => prefixes.some((p) => path === p || path.startsWith(`${p}/`));
 const home = (role: Role) => (role === 'SALESPERSON' ? '/field' : '/dashboard');
 
+function isOriginAllowed(origin: string, allowedOrigins: string[]): boolean {
+  const normOrigin = origin.replace(/\/+$/, '');
+  for (const item of allowedOrigins) {
+    const normItem = item.replace(/\/+$/, '');
+    if (normItem === normOrigin) return true;
+    if (normItem.includes('*')) {
+      const regexStr = '^' + normItem.split('*').map((s) => s.replace(/[.+?^${}()|[\]\\]/g, '\\$&')).join('.*') + '$';
+      if (new RegExp(regexStr).test(normOrigin)) return true;
+    }
+  }
+  return false;
+}
+
 function corsHeaders(req: NextRequest): Record<string, string> | null {
   const origin = req.headers.get('origin');
   if (!origin) return null;
@@ -51,7 +64,7 @@ function corsHeaders(req: NextRequest): Record<string, string> | null {
     .map((s) => s.trim())
     .filter(Boolean);
   const devLocal = process.env.NODE_ENV !== 'production' && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
-  if (!allowed.includes(origin) && !devLocal) return null;
+  if (!isOriginAllowed(origin, allowed) && !devLocal) return null;
   return {
     'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Credentials': 'true',

@@ -54,10 +54,31 @@ export async function mayJoinRoom(user: AuthenticatedUser, room: string): Promis
 }
 
 export function initSocketServer(httpServer: HttpServer, allowedOrigins: string[]): SocketIOServer {
-  const allowed = new Set(allowedOrigins);
+  const allowed = new Set(allowedOrigins.map((o) => o.replace(/\/+$/, '')));
+  const isAllowed = (origin?: string): boolean => {
+    if (!origin) return false;
+    const norm = origin.replace(/\/+$/, '');
+    if (allowed.has(norm)) return true;
+    for (const pat of allowed) {
+      if (pat.includes('*')) {
+        const regexStr = '^' + pat.split('*').map((s) => s.replace(/[.+?^${}()|[\]\\]/g, '\\$&')).join('.*') + '$';
+        if (new RegExp(regexStr).test(norm)) return true;
+      }
+    }
+    return false;
+  };
+
   const io = new SocketIOServer(httpServer, {
     // Cross-origin browser clients (CORS_ORIGINS) only; same-origin is checked in allowRequest.
-    cors: allowed.size ? { origin: [...allowed], credentials: true } : undefined,
+    cors: allowed.size
+      ? {
+          origin: (origin, callback) => {
+            if (!origin || isAllowed(origin)) callback(null, true);
+            else callback(new Error(`Origin ${origin} not allowed by CORS`));
+          },
+          credentials: true,
+        }
+      : undefined,
     allowRequest: (req, cb) => {
       const origin = req.headers.origin;
       if (!origin) return cb(null, true); // native / server-to-server clients
@@ -69,7 +90,7 @@ export function initSocketServer(httpServer: HttpServer, allowedOrigins: string[
       }
       const sameOrigin = host === req.headers.host || host === req.headers['x-forwarded-host'];
       const devLocal = process.env.NODE_ENV !== 'production' && /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host);
-      if (sameOrigin || allowed.has(origin) || devLocal) return cb(null, true);
+      if (sameOrigin || isAllowed(origin) || devLocal) return cb(null, true);
       return cb(`Origin ${origin} not allowed`, false);
     },
     pingInterval: 25000,
